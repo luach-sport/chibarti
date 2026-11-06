@@ -1,0 +1,30 @@
+/* חיברתי's colours and font on top of the shared Itzko kit (the same as the app, www/css/base.css). */
+@font-face {
+  font-family: 'Rubik';
+  src: url('../fonts/Rubik-var.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --primary: #0A8F94;
+  --primary-text: #066B6F;
+  --primary-soft: #DAF2F1;
+  --on-primary: #FFFFFF;
+  --hero: #07777B;
+  --hero-ink: #FFFFFF;
+  --hero-muted: #CDEDEC;
+  --hero-btn-ink: #07777B;
+  --maker-accent: #066B6F;
+  --credit-accent: #FFD27A;
+  --credit-mono: #0A8F94;
+  --credit-mono-ink: #FFFFFF;
+  --credit-glow: rgba(10, 143, 148, 0.22);
+  --shadow: 0 18px 40px -18px rgba(10, 143, 148, 0.4);
+  --font: 'Rubik', 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --primary: #2BC3C5; --primary-text: #6FDCDD; --primary-soft: #113436; --on-primary: #04201F; --hero: #0B5F62; --hero-muted: #BFE6E5; --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7); }
+}
+:root[data-theme="dark"] { --primary: #2BC3C5; --primary-text: #6FDCDD; --primary-soft: #113436; --on-primary: #04201F; --hero: #0B5F62; --hero-muted: #BFE6E5; --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7); }
+

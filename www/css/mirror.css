@@ -1,0 +1,32 @@
+/* Screen sharing: the "share my screen" card, the live card, quality choice */
+.mirror-card { border-radius: 24px; background: var(--surface); border: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-card); }
+.mirror-art { position: relative; height: 150px; border-radius: 18px; background: var(--primary-soft); overflow: hidden; }
+.mirror-art svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.mirror-art .beam { fill: var(--primary); opacity: .18; }
+.mirror-art .ph { fill: var(--surface); stroke: var(--primary); stroke-width: 3; }
+.mirror-art .ln { stroke: var(--primary); stroke-width: 5; stroke-linecap: round; opacity: .45; }
+.mirror-art .sun { fill: var(--sun); }
+.mirror-card h2 { margin: 0; font-size: 19px; font-weight: 800; }
+.mirror-card p { margin: -6px 0 0; font-size: 14px; color: var(--muted); line-height: 1.55; }
+.q-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 6px; gap: 6px; }
+.q-grid button { min-height: 62px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; }
+.q-grid button b { font-size: 14px; }
+.q-grid button small { font-size: 11px; color: var(--muted); }
+.q-grid button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-text); }
+.q-grid button[aria-pressed="true"] small { color: var(--primary-text); }
+.toggle-row { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 6px 4px 6px 0; border: 0; background: transparent; width: 100%; color: var(--ink); text-align: right; }
+.toggle-row .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.toggle-row .t { font-size: 15px; font-weight: 500; }
+.toggle-row .s { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+.live-card { border-radius: 24px; padding: 18px; background: var(--hero); color: var(--hero-ink); display: flex; flex-direction: column; gap: 12px; min-height: 196px; }
+.live-card .top-line { display: flex; align-items: center; gap: 10px; }
+.live-card .rec { width: 12px; height: 12px; border-radius: 6px; background: #FF5C5C; animation: pulse 1.4s ease-in-out infinite; flex: none; }
+.live-card h2 { margin: 0; font-size: 20px; font-weight: 800; flex: 1; min-width: 0; }
+.live-card .stats { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 8px; gap: 8px; }
+.live-card .stat { background: rgba(255, 255, 255, 0.14); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 2px; min-height: 58px; }
+.live-card .stat b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.live-card .stat span { font-size: 11px; color: var(--hero-muted); }
+.live-card .note { font-size: 13px; color: var(--hero-muted); line-height: 1.5; min-height: 20px; }
+.live-card .hbtn { min-height: 52px; border-radius: 16px; border: 0; background: #FFFFFF; color: #A1261F; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.live-card .hbtn.soft { background: rgba(255, 255, 255, 0.16); color: #FFFFFF; }

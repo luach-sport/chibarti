@@ -1,0 +1,27 @@
+/* Cards, list rows, tiles */
+.card { background: var(--surface); border-radius: 18px; border: 1px solid var(--line); box-shadow: var(--shadow-card); }
+.card.pad { padding: 16px; }
+.list { display: flex; flex-direction: column; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--line-soft); background: transparent; width: 100%; text-align: right; color: var(--ink); }
+.list > .row:last-child { border-bottom: 0; }
+.row .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.row .grow.plain { border: 0; background: transparent; padding: 8px 0; text-align: right; color: inherit; align-self: stretch; justify-content: center; }
+.row .t { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.row .t.b { font-size: 16px; font-weight: 600; }
+.row .s { font-size: 12px; line-height: 1.45; color: var(--muted); }
+.row .s.warn { color: var(--amber-text); font-weight: 600; }
+.row .v { font-size: 14px; color: var(--muted); white-space: nowrap; max-width: 46%; overflow: hidden; text-overflow: ellipsis; }
+.row .chev { color: var(--faint); display: flex; }
+.row .lead { color: var(--ink); display: flex; }
+.row .lead.accent { color: var(--primary-text); }
+.row .lead.warn { color: var(--amber-text); }
+.row .check { color: var(--primary); display: flex; }
+.row[aria-disabled="true"] { opacity: .5; }
+.tile { width: 42px; height: 42px; border-radius: 12px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--inset); color: var(--ink); }
+.tile.ok { background: var(--green-soft); color: var(--green-text); }
+.tile.must { background: var(--amber-soft); color: var(--amber-text); }
+.tile svg { stroke-width: 1.8; }
+.task-tile { background: var(--primary-soft); color: var(--primary-text); }
+.task-tile.big { width: 60px; height: 60px; border-radius: 18px; }
+.pick-list .row[aria-pressed="true"] .t, .pick-list button[aria-pressed="true"] .t { color: var(--primary-text); font-weight: 700; }
+.btn.small { min-height: 40px; }

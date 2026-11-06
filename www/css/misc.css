@@ -1,0 +1,15 @@
+/* Toast, settings credit, update dialog */
+#toast-root { position: fixed; z-index: 90; left: 0; right: 0; bottom: calc(var(--nav-h) + 90px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; pointer-events: none; padding: 0 18px; }
+.toast { background: var(--ink); color: var(--bg); border-radius: 16px; padding: 12px 18px; font-size: 15px; font-weight: 600; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); animation: up .2s ease-out; max-width: 540px; text-align: center; }
+
+/* ---------- Settings footer ---------- */
+.credit { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0 4px; text-align: center; }
+.credit .logo { border-radius: 11px; }
+.credit .n { font-size: 14px; font-weight: 600; }
+.credit .by { font-size: 13px; color: var(--muted); }
+.credit .by b { color: var(--ink); direction: ltr; unicode-bidi: isolate; }
+.about-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 6px 0 2px; }
+.about-head .logo { border-radius: 22px; }
+.about-head h2 { margin: 0; font-size: 24px; font-weight: 800; }
+.about-head .ver { color: var(--muted); font-size: 13px; }
+.note-list { margin: 0; padding: 0 18px 0 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }

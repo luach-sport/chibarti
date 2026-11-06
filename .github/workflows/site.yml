@@ -1,0 +1,84 @@
+name: Website
+
+# The public site (GitHub Pages): user guide, download link and fresh screenshots of the app.
+# Built with the shared Itzko site kit (github.com/luach-sport/itzko, kit/), checked out into .kit.
+# Rebuilt when the guide or the app changes, after every new app release (build.yml starts it once
+# update.json has the new version and "what's new"), and once a day (for changes in the kit and new apps).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'www/**'
+      - 'scripts/site/**'
+      - '.github/workflows/site.yml'
+  schedule:
+    - cron: '41 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Get the Itzko site kit
+        uses: actions/checkout@v5
+        with:
+          repository: luach-sport/itzko
+          path: .kit
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install the screenshot browser
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Build the site
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # download counts from the releases
+        run: |
+          ln -s "$RUNNER_TEMP/pw/node_modules" node_modules
+          node .kit/kit/lib/build.mjs
+
+      - name: Publish to the gh-pages branch (GitHub Pages serves it)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${GITHUB_RUN_ID}" > _site/build.txt
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "אתר חיברתי: עדכון אוטומטי (${GITHUB_SHA::7})"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+
+      - name: Check the live site
+        continue-on-error: true
+        run: |
+          for i in $(seq 1 30); do
+            sleep 10
+            LIVE=$(curl -sf "https://luach-sport.github.io/chibarti/build.txt?t=$(date +%s)" || true)
+            [ "$LIVE" = "${GITHUB_RUN_ID}" ] && break
+          done
+          B=https://luach-sport.github.io/chibarti
+          code() { curl -s -o /dev/null -w '%{http_code}' "$1"; }
+          echo "::notice title=live::updated=$([ "$LIVE" = "${GITHUB_RUN_ID}" ] && echo yes || echo no) page=$(code $B/) og=$(code $B/og.jpg) shot=$(code $B/shots/ring.jpg) css=$(code $B/css/brand.css) kit=$(code $B/kit/css/hero.css) version=[$(curl -s $B/ | grep -o 'גרסה [0-9.]*' | head -1)]"

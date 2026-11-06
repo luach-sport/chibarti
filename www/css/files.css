@@ -1,0 +1,51 @@
+/* Files: pickers, the photo grid, transfer cards with progress, received files, history */
+.pick2 { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; }
+.pickbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 108px; border-radius: 20px; border: 1.5px dashed var(--line-strong); background: var(--surface); color: var(--ink); font-size: 15px; font-weight: 700; padding: 10px; text-align: center; }
+.pickbtn .tile { background: var(--primary-soft); color: var(--primary-text); }
+.pickbtn small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.pickbtn:active { background: var(--inset); }
+
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 6px; gap: 6px; }
+.cell { position: relative; border: 0; padding: 0; border-radius: 14px; overflow: hidden; background: var(--inset); }
+.cell .sq { position: relative; display: block; width: 100%; padding-bottom: 100%; }
+.cell img, .cell .ph { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.cell .ph { display: flex; align-items: center; justify-content: center; color: var(--faint); }
+.cell img { opacity: 0; transition: opacity .25s; }
+.cell img.ok { opacity: 1; }
+.cell .tick { position: absolute; top: 6px; left: 6px; width: 24px; height: 24px; border-radius: 12px; border: 2px solid #FFFFFF; background: rgba(0, 0, 0, 0.25); display: flex; align-items: center; justify-content: center; color: #FFFFFF; }
+.cell[aria-pressed="true"] .tick { background: var(--primary); }
+.cell[aria-pressed="false"] img { opacity: .45; }
+.cell .dur { position: absolute; bottom: 6px; right: 6px; font-size: 11px; font-weight: 600; color: #FFFFFF; background: rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 1px 6px; display: flex; align-items: center; gap: 3px; }
+.sel-bar { display: flex; align-items: center; gap: 10px; }
+.sel-bar .grow { flex: 1; min-width: 0; font-size: 14px; color: var(--muted); }
+
+.xfer { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.xfer .head { display: flex; align-items: center; gap: 12px; }
+.xfer .head .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.xfer .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xfer .meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 17px; }
+.xfer .tile.out { background: var(--primary-soft); color: var(--primary-text); }
+.xfer .tile.in { background: var(--green-soft); color: var(--green-text); }
+.xfer .tile.bad { background: var(--red-soft); color: var(--red-text); }
+.xfer .ctl { display: flex; gap: 4px; }
+.xfer .ctl .icon-btn { width: 40px; height: 40px; background: var(--inset); border-radius: 12px; }
+.bar { height: 8px; border-radius: 4px; background: var(--inset); overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 4px; transition: width .3s linear; }
+.bar.paused > span { background: var(--faint); }
+.bar.done > span { background: var(--green-text); }
+.bar.bad > span { background: var(--red-text); }
+.xfer .files { display: grid; grid-gap: 4px; gap: 4px; font-size: 12px; color: var(--muted); }
+.xfer .files div { display: flex; justify-content: space-between; gap: 8px; }
+.xfer .files div span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shield { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--green-text); font-weight: 600; }
+
+.file-row .tile { background: var(--inset); color: var(--ink-2); overflow: hidden; }
+.file-row .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.file-row .acts { display: flex; gap: 2px; }
+.file-row .acts .icon-btn { width: 40px; height: 40px; color: var(--primary-text); }
+.day-label { font-size: 12px; font-weight: 700; color: var(--muted); padding: 10px 14px 4px; background: var(--surface); }
+.st { font-size: 11px; font-weight: 700; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.st.ok { background: var(--green-soft); color: var(--green-text); }
+.st.bad { background: var(--red-soft); color: var(--red-text); }
+.offer-list { max-height: 34vh; overflow-y: auto; }
+.offer-list .row { min-height: 52px; }

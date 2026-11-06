@@ -1,0 +1,12 @@
+node_modules/
+android/
+www/cap-runtime.js
+*.jks
+*.keystore
+.DS_Store
+
+!signing/release.jks
+dist/
+tests/shots/
+_site/
+.kit/

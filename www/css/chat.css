@@ -1,0 +1,20 @@
+/* Text messages: bubbles and the typing bar above the tabs */
+.thread { display: flex; flex-direction: column; gap: 8px; }
+.msg { max-width: 84%; display: flex; flex-direction: column; gap: 4px; }
+.msg.mine { align-self: flex-end; }
+.msg.theirs { align-self: flex-start; }
+.msg .bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; }
+.msg.mine .bubble { background: var(--primary); color: var(--on-primary); border-bottom-left-radius: 6px; }
+.msg.theirs .bubble { background: var(--surface); border: 1px solid var(--line); border-bottom-right-radius: 6px; }
+.msg .info { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); padding: 0 6px; }
+.msg.mine .info { justify-content: flex-end; }
+.msg .copy { border: 0; background: var(--primary-soft); color: var(--primary-text); font-size: 12px; font-weight: 700; border-radius: 99px; min-height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px; }
+.msg .bubble a { color: inherit; text-decoration: underline; }
+#composer-root { position: fixed; z-index: 31; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
+#composer-root:empty { display: none; }
+.composer { max-width: 600px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; }
+.composer textarea { flex: 1; min-width: 0; min-height: 46px; max-height: 120px; border-radius: 23px; border: 1.5px solid var(--line); background: var(--surface); padding: 11px 16px; font-size: 16px; line-height: 1.4; resize: none; color: var(--ink); }
+.composer textarea:focus { outline: none; border-color: var(--primary); }
+.composer .icon-btn { width: 46px; height: 46px; border-radius: 23px; }
+.composer .send { background: var(--primary); color: var(--on-primary); }
+.composer .paste { background: var(--inset); color: var(--ink-2); }

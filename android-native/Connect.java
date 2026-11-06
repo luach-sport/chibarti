@@ -1,0 +1,334 @@
+package com.luachsport.chibarti;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.net.wifi.WifiManager;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Making the connection, hosting side: "Start a connection" makes a Wi-Fi Direct group (or, where Wi-Fi Direct
+ * doesn't work, a local hotspot, or just the shared Wi-Fi), opens the server and shows a QR code and a 6-digit code.
+ * Every new phone must be approved on this screen. The joining side is in Joiner.
+ */
+@SuppressLint("MissingPermission")
+final class Connect implements Server.Gate, WifiDirect.Events {
+    static final class Request {
+        final String rid, name, model, via;
+        final long at = System.currentTimeMillis();
+        final CountDownLatch latch = new CountDownLatch(1);
+        volatile boolean allow = false, remember = true;
+        Request(String rid, String name, String model, String via) { this.rid = rid; this.name = name; this.model = model; this.via = via; }
+    }
+
+    final Hub hub;
+    final Context ctx;
+    final WifiDirect p2p;
+    final WifiJoin wifi;
+    final LanBeacon beacon;
+    final Server server;
+    final Joiner joiner;
+    private final Handler h = new Handler(Looper.getMainLooper());
+    private final Map<String, Request> requests = new LinkedHashMap<>();
+
+    // hosting
+    volatile boolean hosting = false, hostReady = false;
+    private volatile Pairing pairing;
+    private String method = "l", ssid, pass, hostError;
+    private List<String> addresses;
+    private Object hotspot; // WifiManager.LocalOnlyHotspotReservation (Android 8+)
+
+    Connect(Hub hub) {
+        this.hub = hub;
+        this.ctx = hub.ctx;
+        p2p = new WifiDirect(ctx, this);
+        wifi = new WifiJoin(ctx);
+        beacon = new LanBeacon(ctx);
+        server = new Server(this);
+        joiner = new Joiner(this);
+    }
+
+    String mode() {
+        if (hosting) return "hosting";
+        if (joiner.busy()) return "joining";
+        return "idle";
+    }
+
+    // ---------- hosting ----------
+    void host() {
+        synchronized (this) {
+            if (hosting) return;
+            hosting = true;
+            hostReady = false;
+            hostError = null;
+            method = "l";
+            pairing = new Pairing(System::currentTimeMillis);
+        }
+        joiner.stopScan();
+        LinkService.start(ctx);
+        try { server.start(); } catch (Exception e) { hostFailed("server"); return; }
+        hub.changed();
+        if (!p2p.supported()) { tryHotspot("unsupported"); return; }
+        p2p.createGroup((ok, reason, name, password) -> {
+            if (!hosting) { p2p.removeGroup(); return; }
+            if (ok) { ready("d", name, password); return; }
+            tryHotspot(WifiDirect.reason(reason));
+        });
+        h.postDelayed(this::refreshCode, 30000);
+    }
+
+    private void refreshCode() {
+        if (!hosting) return;
+        Pairing p = pairing;
+        if (p != null && p.refreshIfExpired()) hub.changed();
+        h.postDelayed(this::refreshCode, 30000);
+    }
+
+    private void tryHotspot(final String why) {
+        if (Build.VERSION.SDK_INT < 26) { lanOnly(why); return; }
+        try {
+            WifiManager wm = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
+            wm.startLocalOnlyHotspot(new WifiManager.LocalOnlyHotspotCallback() {
+                @Override public void onStarted(WifiManager.LocalOnlyHotspotReservation r) {
+                    if (!hosting) { r.close(); return; }
+                    hotspot = r;
+                    String[] sp = hotspotCredentials(r);
+                    h.postDelayed(() -> ready("h", sp[0], sp[1]), 1200);
+                }
+                @Override public void onFailed(int reason) { lanOnly(why); }
+            }, h);
+        } catch (Exception e) { lanOnly(why); }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static String[] hotspotCredentials(WifiManager.LocalOnlyHotspotReservation r) {
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.net.wifi.SoftApConfiguration c = r.getSoftApConfiguration();
+                String s = c.getSsid();
+                return new String[] { s == null ? "" : s.replace("\"", ""), c.getPassphrase() };
+            }
+            android.net.wifi.WifiConfiguration c = r.getWifiConfiguration();
+            return new String[] { c.SSID == null ? "" : c.SSID.replace("\"", ""), c.preSharedKey == null ? "" : c.preSharedKey.replace("\"", "") };
+        } catch (Exception e) { return new String[] { "", "" }; }
+    }
+
+    private void lanOnly(String why) {
+        List<String> a = NetUtil.addresses();
+        if (a.isEmpty()) { hostFailed("no-network:" + why); return; }
+        synchronized (this) { hostError = "lan-only:" + why; }
+        ready("l", null, null);
+    }
+
+    private void ready(String m, String name, String password) {
+        if (!hosting) return;
+        synchronized (this) {
+            method = m;
+            ssid = name;
+            pass = password;
+            addresses = NetUtil.addresses();
+            if ("d".equals(m)) { addresses.remove(WifiDirect.OWNER_IP); addresses.add(0, WifiDirect.OWNER_IP); }
+            hostReady = true;
+        }
+        String id = hub.ids.myId(), me = hub.ids.myName();
+        if ("d".equals(m)) p2p.advertise(id, me, server.port);
+        beacon.startSending(id, me, server.port);
+        hub.changed();
+    }
+
+    private void hostFailed(String why) {
+        synchronized (this) { hostError = why; hostReady = false; }
+        hub.notice("host-failed", why);
+        hub.changed();
+    }
+
+    /** Stops offering a connection (keeps the network if a phone is already connected through it). */
+    void stopHost() {
+        Session s = hub.session;
+        boolean keepNet = s != null && s.host && s.state != Session.CLOSED;
+        synchronized (this) {
+            hosting = false;
+            hostReady = false;
+            for (Request r : requests.values()) r.latch.countDown();
+        }
+        beacon.stopSending();
+        p2p.stopAdvertise();
+        if (!keepNet) teardownHostNet();
+        hub.changed();
+        if (hub.session == null && !joiner.busy()) LinkService.stop(ctx);
+    }
+
+    private void teardownHostNet() {
+        server.stop();
+        p2p.removeGroup();
+        Object r = hotspot;
+        hotspot = null;
+        if (r != null && Build.VERSION.SDK_INT >= 26) { try { ((WifiManager.LocalOnlyHotspotReservation) r).close(); } catch (Exception ignored) { } }
+    }
+
+    synchronized String qr() {
+        if (!hosting || !hostReady || pairing == null) return null;
+        QrPayload q = new QrPayload();
+        q.id = hub.ids.myId();
+        q.name = hub.ids.myName();
+        q.token = pairing.token();
+        q.method = method;
+        q.ssid = ssid;
+        q.pass = pass;
+        q.addresses = addresses;
+        q.port = server.port;
+        q.expiresSec = pairing.expiresAt() / 1000;
+        return q.build();
+    }
+
+    void describe(JSONObject s) throws Exception {
+        JSONObject host = new JSONObject();
+        synchronized (this) {
+            host.put("on", hosting).put("ready", hostReady).put("method", method).put("error", hostError == null ? "" : hostError);
+            if (hosting && hostReady && pairing != null) {
+                host.put("qr", qr()).put("pin", pairing.pin()).put("expiresAt", pairing.expiresAt()).put("network", ssid == null ? "" : ssid);
+            }
+            JSONArray req = new JSONArray();
+            for (Request r : requests.values()) req.put(new JSONObject().put("rid", r.rid).put("name", r.name).put("model", r.model).put("via", r.via).put("at", r.at));
+            s.put("requests", req);
+        }
+        s.put("host", host);
+        joiner.describe(s);
+    }
+
+    void approve(String rid, boolean allow, boolean remember) {
+        Request r;
+        synchronized (this) { r = requests.get(rid); }
+        if (r == null) return;
+        r.allow = allow;
+        r.remember = remember;
+        r.latch.countDown();
+    }
+
+    // ---------- Server.Gate ----------
+    @Override public String myId() { return hub.ids.myId(); }
+
+    @Override public Handshake.Secrets secrets() {
+        return new Handshake.Secrets() {
+            @Override public byte[] secretFor(int mode, String clientId) {
+                Session s = hub.session;
+                switch (mode) {
+                    case Handshake.MODE_QR: case Handshake.MODE_PIN: { Pairing p = pairing; return hosting && p != null ? p.secretFor(mode) : null; }
+                    case Handshake.MODE_TRUSTED: return hosting ? hub.ids.trustedKey(clientId) : null;
+                    default: return s != null && s.host && s.peerId.equals(clientId) && s.state != Session.CLOSED ? s.key : null;
+                }
+            }
+            @Override public int refuseCode(int mode, String clientId) {
+                if (mode == Handshake.MODE_QR || mode == Handshake.MODE_PIN) return Handshake.ERR_EXPIRED;
+                return Handshake.ERR_UNKNOWN;
+            }
+            @Override public void failed(int mode, String clientId) {
+                Pairing p = pairing;
+                if (mode == Handshake.MODE_PIN && p != null && p.failed()) { hub.notice("pin-renewed", null); hub.changed(); }
+            }
+        };
+    }
+
+    @Override public void accepted(Handshake.Result r, String ip) {
+        try {
+            Session cur = hub.session;
+            if (r.mode == Handshake.MODE_RESUME) {
+                if (cur != null && cur.peerId.equals(r.peerId)) cur.replaceMain(r.link); else r.link.close();
+                return;
+            }
+            if (r.mode == Handshake.MODE_STREAM) {
+                if (cur != null && cur.peerId.equals(r.peerId)) { cur.attachStream(r.link); hub.mirror.onStreamAttached(); } else r.link.close();
+                return;
+            }
+            r.link.socket.setSoTimeout(15000);
+            SecureLink.Frame f = r.link.read();
+            r.link.socket.setSoTimeout(0);
+            if (f.type != Proto.HELLO) { r.link.close(); return; }
+            JSONObject hello = new JSONObject(f.text());
+            String name = QrPayload.clean(hello.optString("name", "Android"), 40), model = QrPayload.clean(hello.optString("model", ""), 60);
+            String via = ip != null && ip.startsWith("192.168.49.") ? "wifi-direct" : "h".equals(method) ? "hotspot" : "wifi";
+            if (hub.busyWith(r.peerId)) { deny(r.link, "busy"); return; }
+            boolean remember = true;
+            if (r.mode != Handshake.MODE_TRUSTED) {
+                Request req = new Request(Crypto.hex(Crypto.random(6)), name, model, via);
+                synchronized (this) { requests.put(req.rid, req); }
+                hub.changed();
+                LinkService.ask(ctx, name);
+                boolean answered = req.latch.await(60, TimeUnit.SECONDS);
+                synchronized (this) { requests.remove(req.rid); }
+                LinkService.askDone(ctx);
+                hub.changed();
+                if (!answered || !req.allow) { deny(r.link, answered ? "declined" : "timeout"); return; }
+                remember = req.remember;
+                Pairing p = pairing;
+                if (p != null) p.consumed();
+            }
+            byte[] key = Crypto.random(32);
+            byte[] pair = remember && r.mode != Handshake.MODE_TRUSTED ? Crypto.random(32) : null;
+            if (pair != null) hub.ids.saveTrusted(r.peerId, name, model, pair, via);
+            JSONObject ok = new JSONObject().put("key", Crypto.b64(key)).put("pair", pair == null ? "" : Crypto.b64(pair))
+                .put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1);
+            r.link.send(Proto.APPROVED, Proto.json(ok));
+            Session s = new Session(r.peerId, true, key, hub);
+            s.peerName = name;
+            s.peerModel = model;
+            s.peerSdk = hello.optInt("sdk");
+            s.via = via;
+            s.address = ip;
+            hub.attach(s, r.link);
+        } catch (Exception e) {
+            r.link.close();
+        }
+    }
+
+    private void deny(SecureLink link, String why) {
+        try { link.send(Proto.DENIED, Proto.json(new JSONObject().put("reason", why))); } catch (Exception ignored) { }
+        link.close();
+    }
+
+    // ---------- session life ----------
+    void onSessionStarted(Session s) {
+        joiner.stopScan();
+        if (s.host) {
+            beacon.stopSending();
+            p2p.stopAdvertise();
+            synchronized (this) { hosting = false; hostReady = false; }
+        }
+    }
+
+    void onLinkLost(Session s) {
+        if (!s.host) joiner.reconnect(s);
+        else h.postDelayed(() -> { if (s.state == Session.RECONNECTING) s.close("lost", false); }, 35000);
+    }
+
+    void onSessionClosed(Session s, String reason) {
+        if (s.host) { if (!hosting) teardownHostNet(); }
+        else joiner.leaveNetwork();
+        if (!hosting && !joiner.busy()) LinkService.stop(ctx);
+    }
+
+    void stopAll() {
+        joiner.cancel();
+        joiner.stopScan();
+        if (hosting) stopHost();
+        else if (hub.session == null) teardownHostNet();
+    }
+
+    // ---------- WifiDirect.Events ----------
+    @Override public void onPeers() { hub.changed(); }
+
+    @Override public void onConnection(boolean connected, String ownerIp, boolean iAmOwner) { joiner.onP2pConnection(connected, ownerIp, iAmOwner); }
+
+    @Override public void onEnabled(boolean enabled) {
+        if (!enabled && hosting && "d".equals(method)) { synchronized (this) { hostError = "wifi-off"; } }
+        hub.changed();
+    }
+}

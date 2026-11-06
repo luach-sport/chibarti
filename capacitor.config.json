@@ -1,0 +1,30 @@
+{
+  "appId": "com.luachsport.chibarti",
+  "appName": "Chibarti",
+  "webDir": "www",
+  "backgroundColor": "#F1F6F6",
+  "android": {
+    "backgroundColor": "#F1F6F6",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "backgroundColor": "#F1F6F6",
+      "style": "LIGHT",
+      "overlaysWebView": false
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "statsUrl": "",
+      "updateUrl": "",
+      "channelUrl": "",
+      "allowModifyUrl": false,
+      "appReadyTimeout": 15000,
+      "autoDeleteFailed": true,
+      "autoDeletePrevious": true,
+      "resetWhenUpdate": true,
+      "shakeMenu": false,
+      "disableJSLogging": true
+    }
+  }
+}

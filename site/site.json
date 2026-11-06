@@ -1,0 +1,43 @@
+{
+  "id": "chibarti",
+  "title": "חיברתי – מטלפון לטלפון, בלי אינטרנט",
+  "description": "מחברים שני טלפוני אנדרואיד ישירות ב-Wi-Fi, בלי אינטרנט: שיקוף מסך עם קול, שליחת קבצים ותמונות באיכות מקורית, והודעות. מוצפן, ורק באישור. עובד גם בטלפונים ישנים. פותח על ידי Itzko.",
+  "themeColor": "#0A8F94",
+  "icon": "www/icon-512.png",
+  "fonts": "www/fonts",
+  "appDir": "www",
+  "versionFile": "js/version.js",
+  "versionGlobal": "CHIBARTI_VERSION",
+  "shots": "scripts/site/scenes.mjs",
+  "css": [
+    "brand.css"
+  ],
+  "creditText": "חיברתי היא אפליקציה עצמאית של Itzko: בלי פרסומות, בלי הרשמה ובלי שרת. מה שעובר בין הטלפונים נשאר ביניהם. כל רעיון או תקלה מגיעים ישירות אליו דרך \"פנייה / הצעת ייעול\" בהגדרות של האפליקציה.",
+  "footerNote": "הטלפונים, הקבצים וההודעות בצילומי המסך הם לדוגמה.",
+  "parts": [
+    "hero",
+    "WHATS_NEW",
+    "offline",
+    "install",
+    "tabs",
+    "ch-start",
+    "ch-join",
+    "ch-approve",
+    "ch-home",
+    "ch-mirror",
+    "ch-watch",
+    "ch-files",
+    "ch-received",
+    "ch-text",
+    "ch-settings",
+    "ch-privacy",
+    "ch-old",
+    "ch-share",
+    "ch-updates",
+    "ch-feedback",
+    "ch-iphone",
+    "kit:share-band",
+    "kit:credit",
+    "kit:footer"
+  ]
+}
