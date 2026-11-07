@@ -147,8 +147,18 @@ public class LinkService extends Service {
         return b.build();
     }
 
+    private String shown = "";
+
+    /** Updates the notification only when what it says changed (Android drops too-frequent updates). */
     private void show() {
-        try { ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(ID, build()); } catch (Exception ignored) { }
+        try {
+            Hub hub = Hub.get(this);
+            Session s = hub.session;
+            String key = hub.mode() + "|" + hub.mirror.role + "|" + (s == null ? "" : s.peerName);
+            if (key.equals(shown)) return;
+            shown = key;
+            ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(ID, build());
+        } catch (Exception ignored) { }
     }
 
     private void foreground() {
