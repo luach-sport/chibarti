@@ -207,10 +207,10 @@ final class Joiner implements LanBeacon.Found {
         setStep("approval");
         JSONObject hello = new JSONObject().put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1);
         r.link.send(Proto.HELLO, Proto.json(hello));
-        r.link.socket.setSoTimeout(75000);
-        SecureLink.Frame f;
+        r.link.setReadTimeout(75000);
+        Link.Frame f;
         try { f = r.link.read(); } catch (IOException e) { r.link.close(); throw new IOException(cancelled ? "cancelled" : "timeout"); }
-        r.link.socket.setSoTimeout(0);
+        r.link.setReadTimeout(0);
         if (f.type == Proto.DENIED) {
             String why = new JSONObject(f.text()).optString("reason", "declined");
             r.link.close();

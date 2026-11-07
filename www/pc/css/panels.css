@@ -1,0 +1,41 @@
+/* The connected layout: the screen big, files and messages beside it. Fixed heights, so nothing moves. */
+.desk {
+  height: calc(100vh - var(--top-h) - var(--foot-h)); padding: 16px; display: grid; gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 410px); grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-areas: "screen files" "screen chat";
+}
+.panel { background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.panel.screen { grid-area: screen; }
+.panel.files { grid-area: files; }
+.panel.chat { grid-area: chat; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px 8px; min-height: 52px; }
+.panel-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.tools { display: flex; align-items: center; gap: 6px; }
+.panel-body { flex: 1; min-height: 0; padding: 4px 18px 18px; }
+.scroll { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.empty { color: var(--faint); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; height: 100%; margin: 0; padding: 12px; font-size: 14px; }
+.empty b { color: var(--muted); }
+.list-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 6px; }
+.list-head h4 { margin: 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: 100%; }
+.card { background: var(--bg); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 12px; min-height: 0; overflow: auto; }
+.card > * { max-width: 440px; width: 100%; }
+.card .card-ico { width: 52px; }
+.card h3 { margin: 0; font-size: 17px; }
+.card-ico { width: 52px; height: 52px; border-radius: 16px; background: var(--primary-soft); color: var(--primary-text); display: grid; place-items: center; }
+.card .btn.big { align-self: stretch; }
+.opt-row { display: flex; align-items: center; gap: 12px; color: var(--ink-2); }
+.segs { display: inline-flex; background: var(--inset); border-radius: 12px; padding: 3px; }
+.seg { border: 0; background: transparent; padding: 6px 12px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.seg.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+
+@media (max-width: 1000px) {
+  .desk { height: auto; grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "screen" "files" "chat"; }
+  .panel.screen { height: auto; min-height: 0; }
+  .panel.screen .panel-body { flex: none; }
+  .panel.screen .stage, .panel.screen .ask, .panel.screen .sending { height: 62vh; min-height: 380px; }
+  .two { height: auto; }
+  .panel.files, .panel.chat { height: 440px; }
+}
+@media (max-width: 700px) { .two { grid-template-columns: 1fr; height: auto; } }

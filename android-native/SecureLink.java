@@ -15,15 +15,8 @@ import javax.crypto.spec.SecretKeySpec;
  * [length 4][ciphertext of (type 1 + body)][tag 16]. A changed, replayed or reordered frame fails the tag check
  * and closes the connection. Plain Java (tested on a PC).
  */
-final class SecureLink {
+final class SecureLink implements Link {
     static final int MAX_FRAME = 8 * 1024 * 1024;
-
-    static final class Frame {
-        final int type;
-        final byte[] body;
-        Frame(int type, byte[] body) { this.type = type; this.body = body; }
-        String text() { return new String(body, Proto.UTF8); }
-    }
 
     final Socket socket;
     private final DataInputStream in;
@@ -33,8 +26,8 @@ final class SecureLink {
     private final Cipher enc, dec;
     private long sendCtr = 0, recvCtr = 0;
     private volatile boolean closed = false;
-    volatile long lastRx = System.currentTimeMillis();
-    volatile long bytesOut = 0, bytesIn = 0;
+    private volatile long lastRx = System.currentTimeMillis();
+    private volatile long bytesOut = 0, bytesIn = 0;
 
     SecureLink(Socket socket, byte[] sendKey, byte[] recvKey, boolean client) throws IOException {
         this.socket = socket;
@@ -57,9 +50,9 @@ final class SecureLink {
         return n;
     }
 
-    void send(int type, byte[] body) throws IOException { send(type, body, 0, body == null ? 0 : body.length); }
+    @Override public void send(int type, byte[] body) throws IOException { send(type, body, 0, body == null ? 0 : body.length); }
 
-    synchronized void send(int type, byte[] body, int off, int len) throws IOException {
+    @Override public synchronized void send(int type, byte[] body, int off, int len) throws IOException {
         if (closed) throw new IOException("closed");
         byte[] plain = new byte[1 + len];
         plain[0] = (byte) type;
@@ -76,7 +69,7 @@ final class SecureLink {
     }
 
     /** Blocks until the next frame. Throws on a closed, broken or tampered connection. */
-    Frame read() throws IOException {
+    @Override public Frame read() throws IOException {
         int len = in.readInt();
         if (len < 17 || len > MAX_FRAME) throw new IOException("bad-frame-size " + len);
         byte[] ct = new byte[len];
@@ -93,9 +86,12 @@ final class SecureLink {
         return new Frame(plain[0] & 255, body);
     }
 
-    boolean isClosed() { return closed; }
+    @Override public boolean isClosed() { return closed; }
+    @Override public long lastRx() { return lastRx; }
+    @Override public long bytesIn() { return bytesIn; }
+    @Override public void setReadTimeout(int ms) throws IOException { socket.setSoTimeout(ms); }
 
-    void close() {
+    @Override public void close() {
         closed = true;
         try { socket.close(); } catch (Exception ignored) { }
     }

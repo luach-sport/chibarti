@@ -1,0 +1,7 @@
+/* The top bar */
+.top { height: var(--top-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 22px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand img { border-radius: 10px; }
+.brand b { font-size: 19px; font-weight: 700; }
+.brand span { color: var(--muted); font-size: 15px; }
+.status { display: flex; align-items: center; gap: 10px; min-height: 34px; }

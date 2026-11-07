@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      APP_VERSION: '1.0'
+      APP_VERSION: '1.1'
     steps:
       - uses: actions/checkout@v5
 

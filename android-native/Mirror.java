@@ -130,7 +130,7 @@ final class Mirror {
         else if ("sending".equals(role)) { ScreenSender ss = sender; if (ss != null) ss.streamBack(); }
     }
 
-    void onStream(SecureLink.Frame f) {
+    void onStream(Link.Frame f) {
         if ("viewing".equals(role)) {
             if (f.type == Proto.VIDEO_CONFIG && "connecting".equals(state)) { state = "live"; hub.changed(); }
             MirrorRx.onFrame(f.type, f.body);

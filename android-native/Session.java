@@ -13,8 +13,8 @@ import java.util.ArrayDeque;
  */
 final class Session {
     interface Listener {
-        void onMessage(Session s, SecureLink.Frame f);
-        void onStreamFrame(Session s, SecureLink.Frame f);
+        void onMessage(Session s, Link.Frame f);
+        void onStreamFrame(Session s, Link.Frame f);
         void onLinkLost(Session s);
         void onResumed(Session s);
         void onClosed(Session s, String reason);
@@ -32,7 +32,8 @@ final class Session {
     String address;
     int port;
     Network network;
-    volatile SecureLink main, stream;
+    volatile Link main, stream;
+    String kind = "phone"; // "phone" or "pc" (a computer's browser)
     volatile int state = ACTIVE;
     volatile int rttMs = -1;
     volatile int generation = 0;
@@ -48,7 +49,7 @@ final class Session {
         this.l = l;
     }
 
-    void start(SecureLink link) {
+    void start(Link link) {
         main = link;
         startReader(link, false);
         writer = new Thread(this::writeLoop, "session-out");
@@ -59,11 +60,11 @@ final class Session {
         pinger.start();
     }
 
-    private void startReader(final SecureLink link, final boolean isStream) {
+    private void startReader(final Link link, final boolean isStream) {
         Thread t = new Thread(() -> {
             try {
                 while (!link.isClosed()) {
-                    SecureLink.Frame f = link.read();
+                    Link.Frame f = link.read();
                     if (f.type == Proto.PING) { control(Proto.PONG, new JSONObject(f.text())); continue; }
                     if (f.type == Proto.PONG) {
                         try { rttMs = (int) Math.max(0, System.currentTimeMillis() - new JSONObject(f.text()).optLong("t")); } catch (Exception ignored) { }
@@ -80,17 +81,17 @@ final class Session {
         t.start();
     }
 
-    void attachStream(SecureLink link) {
-        SecureLink old = stream;
+    void attachStream(Link link) {
+        Link old = stream;
         stream = link;
         if (old != null) old.close();
         startReader(link, true);
     }
 
-    void dropStream() { SecureLink s = stream; stream = null; if (s != null) s.close(); }
+    void dropStream() { Link s = stream; stream = null; if (s != null) s.close(); }
 
-    void replaceMain(SecureLink link) {
-        SecureLink old = main;
+    void replaceMain(Link link) {
+        Link old = main;
         main = link;
         if (old != null && old != link) old.close();
         state = ACTIVE;
@@ -99,7 +100,7 @@ final class Session {
         l.onResumed(this);
     }
 
-    private void lost(SecureLink link) {
+    private void lost(Link link) {
         if (link != main || state == CLOSED) return;
         link.close();
         state = RECONNECTING;
@@ -142,7 +143,7 @@ final class Session {
                 q.notifyAll();
             }
             if (o == null) continue;
-            SecureLink link = main;
+            Link link = main;
             try { link.send((Integer) o[0], (byte[]) o[1]); } catch (IOException e) { lost(link); }
         }
     }
@@ -151,8 +152,8 @@ final class Session {
         while (state != CLOSED) {
             try { Thread.sleep(2500); } catch (InterruptedException e) { return; }
             if (state != ACTIVE) continue;
-            SecureLink link = main;
-            if (System.currentTimeMillis() - link.lastRx > 10000) { lost(link); continue; }
+            Link link = main;
+            if (System.currentTimeMillis() - link.lastRx() > 10000) { lost(link); continue; }
             try { control(Proto.PING, new JSONObject().put("t", System.currentTimeMillis())); } catch (Exception ignored) { }
         }
     }
@@ -171,5 +172,5 @@ final class Session {
         l.onClosed(this, reason);
     }
 
-    long bytesIn() { SecureLink m = main, s = stream; return (m == null ? 0 : m.bytesIn) + (s == null ? 0 : s.bytesIn); }
+    long bytesIn() { Link m = main, s = stream; return (m == null ? 0 : m.bytesIn()) + (s == null ? 0 : s.bytesIn()); }
 }

@@ -7,13 +7,23 @@
 
   A.host = async () => {
     CB.haptic();
+    ui.hostFor = 'phone';
     if (!(await CB.ensureNetwork('host'))) return;
     await CB.N.call('host');
     if (CB.screenName() !== 'host') CB.pushView({ name: 'host' });
   };
   A['host-retry'] = async () => { await CB.N.call('stopHost'); await CB.sleep(300); await CB.N.call('host'); };
-  A['show-host'] = () => CB.pushView({ name: 'host' });
-  A['stop-host'] = async () => { await CB.N.call('stopHost'); if (CB.screenName() === 'host') CB.popView(); };
+  A['show-host'] = () => CB.pushView({ name: ui.hostFor === 'pc' ? 'pc' : 'host' });
+  A['stop-host'] = async () => { await CB.N.call('stopHost'); if (CB.screenName() === 'host' || CB.screenName() === 'pc') CB.popView(); };
+
+  // A computer: the same offer as for a phone, with the steps for a browser
+  A.pc = async () => {
+    CB.haptic();
+    ui.hostFor = 'pc';
+    if (!(await CB.ensureNetwork('pc'))) return;
+    await CB.N.call('host');
+    if (CB.screenName() !== 'pc') { if (CB.screenName() === 'host') ui.stack.pop(); CB.pushView({ name: 'pc' }); }
+  };
 
   A.scan = async () => {
     CB.haptic();
@@ -93,6 +103,7 @@
     const then = ui.sheet && ui.sheet.data && ui.sheet.data.then;
     CB.closeSheet();
     if (then === 'host') A.host();
+    else if (then === 'pc') A.pc();
     else if (then === 'join') A.scan();
     else if (then === 'scan') A.nearby();
   };

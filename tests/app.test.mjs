@@ -133,6 +133,21 @@ for (const v of ['devices', 'setup']) {
   await ev((name) => { const K = window.__chibarti.CB; K.pushView({ name }); }, v);
   await noSideScroll('page ' + v);
 }
+// ---------- a computer: the steps (network, address, code), its approval, and the connected home ----------
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.tab = 'home'; K.render(); });
+await page.click('[data-action="pc"]');
+await page.waitForSelector('#pc-addr');
+const pcv = await ev(() => ({ addr: document.getElementById('pc-addr').textContent, pin: document.getElementById('pc-pin').textContent, pass: (document.getElementById('pc-pass') || {}).textContent, other: document.querySelector('.notice.gray b.ltr') && document.querySelector('.notice.gray b.ltr').textContent }));
+ok(pcv.addr === '192.168.49.1:8080' && pcv.pin === '482 193' && pcv.pass === 'k7Rw2pQx' && pcv.other === '192.168.1.23:8080', 'computer steps', pcv);
+await noSideScroll('computer steps');
+await ev(() => window.__chibarti.CB.sim.set({ requests: [{ rid: 'r9', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'pc', kind: 'pc', at: Date.now() }] }));
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('approve') && document.querySelector('.sheet').textContent.includes('לזכור את המחשב')), 'computer approval sheet');
+await ev(() => { const K = window.__chibarti.CB; K.sim.set({ requests: [], mode: 'connected', link: { peerId: 'c1', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'pc', kind: 'pc', since: Date.now(), quality: 'great' } }); });
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.screenName() === 'home' && document.getElementById('link-card').textContent.includes('דפדפן במחשב')), 'connected to a computer');
+await noSideScroll('home with a computer');
+
 await ev(() => { const K = window.__chibarti.CB; K.state.settings.theme = 'dark'; K.applyTheme(); });
 ok(await ev(() => document.documentElement.getAttribute('data-theme')) === 'dark', 'dark theme');
 

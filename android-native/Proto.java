@@ -16,6 +16,8 @@ final class Proto {
     static final int MIRROR_OFFER = 30, MIRROR_REPLY = 31, MIRROR_STOP = 32, KEY_REQUEST = 33, MIRROR_STATS = 34;
     // stream connection (binary body)
     static final int VIDEO_CONFIG = 40, VIDEO_FRAME = 41, AUDIO_CONFIG = 42, AUDIO_FRAME = 43;
+    // a computer's sound comes as Opus (what browsers encode); same layout as AUDIO_CONFIG, csd = the OpusHead
+    static final int AUDIO_OPUS_CONFIG = 44;
 
     static final int CHUNK_SIZE = 64 * 1024;
 
@@ -49,6 +51,7 @@ final class Proto {
     static final class Config {
         final int a, b;
         final byte[] csd0, csd1;
+        String mime = "audio/mp4a-latm";
         Config(byte[] body) {
             ByteBuffer buf = ByteBuffer.wrap(body);
             a = buf.getInt();

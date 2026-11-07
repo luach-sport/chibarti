@@ -3,7 +3,7 @@
   'use strict';
   const CB = (window.CB = window.CB || {});
 
-  CB.VERSION = window.CHIBARTI_VERSION || { version: '1.0', build: 'dev' };
+  CB.VERSION = window.CHIBARTI_VERSION || { version: '1.1', build: 'dev' };
   CB.APP_ID = 'com.luachsport.chibarti';
   CB.REPO = 'luach-sport/chibarti';
   CB.SITE_URL = 'https://luach-sport.github.io/chibarti/';

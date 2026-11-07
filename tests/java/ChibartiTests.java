@@ -84,7 +84,7 @@ public class ChibartiTests {
             Handshake.Result[] r = pair(Handshake.MODE_QR, tok, tok, null);
             check(r[0].peerId.equals(B) && r[1].peerId.equals(A), "ids");
             r[0].link.send(Proto.TEXT, "שלום".getBytes(Proto.UTF8));
-            SecureLink.Frame f = r[1].link.read();
+            Link.Frame f = r[1].link.read();
             check(f.type == Proto.TEXT && f.text().equals("שלום"), "client to server");
             r[1].link.send(Proto.PONG, new byte[] { 1, 2, 3 });
             f = r[0].link.read();
@@ -298,7 +298,7 @@ public class ChibartiTests {
             Thread rx = new Thread(() -> {
                 try {
                     while (true) {
-                        SecureLink.Frame f = r[1].link.read();
+                        Link.Frame f = r[1].link.read();
                         if (f.type == Proto.CHUNK) {
                             java.nio.ByteBuffer b = java.nio.ByteBuffer.wrap(f.body);
                             b.getInt(); int fid = b.getInt(); long off = b.getLong();
@@ -344,6 +344,69 @@ public class ChibartiTests {
             check(c.a == 1280 && c.b == 720 && Arrays.equals(c.csd0, sps) && Arrays.equals(c.csd1, pps), "fields");
             try { new Proto.Config(new byte[] { 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 99 }); throw new AssertionError("bad accepted"); }
             catch (IllegalArgumentException e) { check(true, ""); }
+        });
+
+        test("computer page: WebSocket accept key matches RFC 6455", () -> {
+            check(WsLink.accept("dGhlIHNhbXBsZSBub25jZQ==").equals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo="), WsLink.accept("dGhlIHNhbXBsZSBub25jZQ=="));
+        });
+
+        test("computer page: the phone's own certificate is valid, kept, and its fingerprint stable", () -> {
+            java.io.File dir = java.nio.file.Files.createTempDirectory("tls").toFile();
+            Tls a = Tls.load(dir), b = Tls.load(dir);
+            check(a.fingerprint.equals(b.fingerprint), "same certificate after restart");
+            a.cert.checkValidity();
+            a.cert.verify(a.cert.getPublicKey());
+            check(a.cert.getSubjectX500Principal().getName().contains("CN="), "name");
+            check(a.context.getServerSocketFactory() != null, "TLS ready");
+        });
+
+        test("computer page: a WebSocket message goes both ways over TLS (masked, fragmented, close)", () -> {
+            java.io.File dir = java.nio.file.Files.createTempDirectory("tls").toFile();
+            Tls tls = Tls.load(dir);
+            final WsLink[] got = new WsLink[1];
+            final java.util.concurrent.CountDownLatch in = new java.util.concurrent.CountDownLatch(1);
+            WebServer w = new WebServer(tls, (path) -> new java.io.ByteArrayInputStream("<p>ok</p>".getBytes("UTF-8")), (link) -> { got[0] = link; in.countDown(); });
+            w.start();
+            try {
+                javax.net.ssl.SSLContext trustAll = javax.net.ssl.SSLContext.getInstance("TLS");
+                trustAll.init(null, new javax.net.ssl.TrustManager[] { new javax.net.ssl.X509TrustManager() {
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) { }
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) { }
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
+                } }, null);
+                java.net.Socket sk = trustAll.getSocketFactory().createSocket("127.0.0.1", w.httpsPort);
+                java.io.OutputStream o = sk.getOutputStream();
+                java.io.InputStream i = sk.getInputStream();
+                o.write(("GET /ws HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n").getBytes("UTF-8"));
+                StringBuilder head = new StringBuilder();
+                while (!head.toString().endsWith("\r\n\r\n")) head.append((char) i.read());
+                check(head.toString().startsWith("HTTP/1.1 101") && head.toString().contains("s3pPLMBiTxaQ9kYGzzhZRbK+xOo="), head.toString());
+                check(in.await(3, java.util.concurrent.TimeUnit.SECONDS), "page socket handed over");
+                // a browser frame: binary, masked, in two pieces: [TEXT]["שלום"]
+                byte[] msg = ((char) Proto.TEXT + "שלום").getBytes("UTF-8");
+                byte[] key = { 9, 8, 7, 6 };
+                int half = msg.length / 2;
+                for (int part = 0; part < 2; part++) {
+                    int from = part == 0 ? 0 : half, to = part == 0 ? half : msg.length;
+                    o.write(part == 0 ? 0x02 : 0x80);
+                    o.write(0x80 | (to - from));
+                    o.write(key);
+                    for (int k = from; k < to; k++) o.write(msg[k] ^ key[(k - from) & 3]);
+                }
+                o.flush();
+                Link.Frame f = got[0].read();
+                check(f.type == Proto.TEXT && f.text().equals("שלום"), "page to phone: " + f.type);
+                got[0].send(Proto.PONG, new byte[] { 1, 2, 3 });
+                check(i.read() == 0x82 && i.read() == 4 && i.read() == Proto.PONG && i.read() == 1 && i.read() == 2 && i.read() == 3, "phone to page");
+                // the page closes: exactly one close frame comes back
+                o.write(0x88); o.write(0x82); o.write(key); o.write(0x03 ^ 9); o.write(0xE8 ^ 8); o.flush();
+                try { got[0].read(); throw new AssertionError("read after close"); } catch (IOException e) { check(true, ""); }
+                check(i.read() == 0x88, "close frame");
+                int n = i.read();
+                for (int k = 0; k < n; k++) i.read();
+                check(i.read() == -1, "only one close frame");
+                sk.close();
+            } finally { w.stop(); }
         });
 
         System.out.println(passed + " passed, " + failed + " failed");

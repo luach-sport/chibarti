@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 final class Connect implements Server.Gate, WifiDirect.Events {
     static final class Request {
         final String rid, name, model, via;
+        String kind = "phone";
         final long at = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch(1);
         volatile boolean allow = false, remember = true;
@@ -36,6 +37,8 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     final LanBeacon beacon;
     final Server server;
     final Joiner joiner;
+    private Tls tls;
+    private WebServer web;
     private final Handler h = new Handler(Looper.getMainLooper());
     private final Map<String, Request> requests = new LinkedHashMap<>();
 
@@ -75,6 +78,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         joiner.stopScan();
         LinkService.start(ctx);
         try { server.start(); } catch (Exception e) { hostFailed("server"); return; }
+        startWeb();
         hub.changed();
         if (!p2p.supported()) { tryHotspot("unsupported"); return; }
         p2p.createGroup((ok, reason, name, password) -> {
@@ -166,8 +170,29 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         if (hub.session == null && !joiner.busy()) LinkService.stop(ctx);
     }
 
+    /** The web server for a computer's browser (HTTPS + WebSocket), running whenever this phone offers a connection. */
+    private void startWeb() {
+        try {
+            if (tls == null) tls = Tls.load(new java.io.File(ctx.getFilesDir(), "tls"));
+            if (web == null) web = new WebServer(tls, this::asset, this::pcAccepted);
+            web.start();
+        } catch (Exception e) { android.util.Log.w("Chibarti", "web server", e); }
+    }
+
+    /** A file of the computer page (www/pc/), from the newest app files. The font and the icon are shared with the app. */
+    private java.io.InputStream asset(String path) throws java.io.IOException {
+        String rel = path.startsWith("fonts/") || "icon.png".equals(path) || "logo.svg".equals(path) ? path : "pc/" + path;
+        String root = ChibartiPlugin.webRoot();
+        if (root != null) {
+            java.io.File f = new java.io.File(root, rel);
+            if (f.isFile()) return new java.io.FileInputStream(f);
+        }
+        return ctx.getAssets().open("public/" + rel);
+    }
+
     private void teardownHostNet() {
         server.stop();
+        if (web != null) web.stop();
         p2p.removeGroup();
         Object r = hotspot;
         hotspot = null;
@@ -195,9 +220,15 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             host.put("on", hosting).put("ready", hostReady).put("method", method).put("error", hostError == null ? "" : hostError);
             if (hosting && hostReady && pairing != null) {
                 host.put("qr", qr()).put("pin", pairing.pin()).put("expiresAt", pairing.expiresAt()).put("network", ssid == null ? "" : ssid);
+                host.put("pass", pass == null ? "" : pass);
+                JSONArray ips = new JSONArray();
+                if (addresses != null) for (String a : addresses) ips.put(a);
+                host.put("addresses", ips);
             }
+            WebServer w = web;
+            if (w != null && w.running()) host.put("web", new JSONObject().put("http", w.httpPort).put("https", w.httpsPort).put("fp", tls == null ? "" : tls.fingerprint));
             JSONArray req = new JSONArray();
-            for (Request r : requests.values()) req.put(new JSONObject().put("rid", r.rid).put("name", r.name).put("model", r.model).put("via", r.via).put("at", r.at));
+            for (Request r : requests.values()) req.put(new JSONObject().put("rid", r.rid).put("name", r.name).put("model", r.model).put("via", r.via).put("kind", r.kind).put("at", r.at));
             s.put("requests", req);
         }
         s.put("host", host);
@@ -248,48 +279,103 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 if (cur != null && cur.peerId.equals(r.peerId)) { cur.attachStream(r.link); hub.mirror.onStreamAttached(); } else r.link.close();
                 return;
             }
-            r.link.socket.setSoTimeout(15000);
-            SecureLink.Frame f = r.link.read();
-            r.link.socket.setSoTimeout(0);
+            r.link.setReadTimeout(15000);
+            Link.Frame f = r.link.read();
+            r.link.setReadTimeout(0);
             if (f.type != Proto.HELLO) { r.link.close(); return; }
             JSONObject hello = new JSONObject(f.text());
             String name = QrPayload.clean(hello.optString("name", "Android"), 40), model = QrPayload.clean(hello.optString("model", ""), 60);
             String via = ip != null && ip.startsWith("192.168.49.") ? "wifi-direct" : "h".equals(method) ? "hotspot" : "wifi";
-            if (hub.busyWith(r.peerId)) { deny(r.link, "busy"); return; }
-            boolean remember = true;
-            if (r.mode != Handshake.MODE_TRUSTED) {
-                Request req = new Request(Crypto.hex(Crypto.random(6)), name, model, via);
-                synchronized (this) { requests.put(req.rid, req); }
-                hub.changed();
-                LinkService.ask(ctx, name);
-                boolean answered = req.latch.await(60, TimeUnit.SECONDS);
-                synchronized (this) { requests.remove(req.rid); }
-                LinkService.askDone(ctx);
-                hub.changed();
-                if (!answered || !req.allow) { deny(r.link, answered ? "declined" : "timeout"); return; }
-                remember = req.remember;
-                Pairing p = pairing;
-                if (p != null) p.consumed();
-            }
-            byte[] key = Crypto.random(32);
-            byte[] pair = remember && r.mode != Handshake.MODE_TRUSTED ? Crypto.random(32) : null;
-            if (pair != null) hub.ids.saveTrusted(r.peerId, name, model, pair, via);
-            JSONObject ok = new JSONObject().put("key", Crypto.b64(key)).put("pair", pair == null ? "" : Crypto.b64(pair))
-                .put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1);
-            r.link.send(Proto.APPROVED, Proto.json(ok));
-            Session s = new Session(r.peerId, true, key, hub);
-            s.peerName = name;
-            s.peerModel = model;
-            s.peerSdk = hello.optInt("sdk");
-            s.via = via;
-            s.address = ip;
-            hub.attach(s, r.link);
+            approveAndAttach(r.link, r.peerId, r.mode, name, model, hello.optInt("sdk"), via, "phone", ip);
         } catch (Exception e) {
             r.link.close();
         }
     }
 
-    private void deny(SecureLink link, String why) {
+    /** A computer's browser (WebServer, after the HTTPS + WebSocket handshake). The first message must be HELLO. */
+    void pcAccepted(WsLink link) {
+        try {
+            link.setReadTimeout(20000);
+            Link.Frame f = link.read();
+            link.setReadTimeout(0);
+            if (f.type != Proto.HELLO) { link.close(); return; }
+            JSONObject h = new JSONObject(f.text());
+            String id = h.optString("id", "");
+            if (!id.matches("[0-9a-f]{32}")) { deny(link, "bad"); return; }
+            String mode = h.optString("mode", "pin");
+            byte[] key;
+            try { key = Crypto.unb64(h.optString("key", "")); } catch (Exception e) { key = new byte[0]; }
+            Session cur = hub.session;
+            if ("resume".equals(mode) || "stream".equals(mode)) {
+                if (cur != null && cur.state != Session.CLOSED && cur.peerId.equals(id) && "pc".equals(cur.kind) && Crypto.same(cur.key, key)) {
+                    link.send(Proto.APPROVED, Proto.json(new JSONObject().put("resumed", true)));
+                    if ("resume".equals(mode)) cur.replaceMain(link);
+                    else { cur.attachStream(link); hub.mirror.onStreamAttached(); }
+                } else deny(link, "unknown");
+                return;
+            }
+            String name = QrPayload.clean(h.optString("name", "מחשב"), 40), model = QrPayload.clean(h.optString("model", "דפדפן"), 60);
+            int m;
+            if ("trusted".equals(mode)) {
+                byte[] k = hub.ids.trustedKey(id);
+                if (k == null || !Crypto.same(k, key)) { deny(link, "unknown"); return; }
+                if (!hosting) { deny(link, hub.session != null ? "busy" : "not-offering"); return; }
+                m = Handshake.MODE_TRUSTED;
+            } else {
+                Pairing p = pairing;
+                if (!hosting && hub.session != null) { deny(link, "busy"); return; }
+                byte[] secret = hosting && p != null ? p.secretFor(Handshake.MODE_PIN) : null;
+                if (secret == null) { deny(link, "expired"); return; }
+                if (!Crypto.same(secret, h.optString("pin", "").getBytes(Proto.UTF8))) {
+                    if (p.failed()) { hub.notice("pin-renewed", null); hub.changed(); }
+                    try { Thread.sleep(1000); } catch (InterruptedException ignored) { }
+                    deny(link, "wrong-code");
+                    return;
+                }
+                m = Handshake.MODE_PIN;
+            }
+            approveAndAttach(link, id, m, name, model, 0, "pc", "pc", link.remoteIp);
+        } catch (Exception e) {
+            link.close();
+        }
+    }
+
+    /** Same for phones and computers: a new device must be approved on this screen; a remembered one needs no approval. */
+    private void approveAndAttach(Link link, String peerId, int mode, String name, String model, int sdk, String via, String kind, String ip) throws Exception {
+        if (hub.busyWith(peerId)) { deny(link, "busy"); return; }
+        boolean remember = true;
+        if (mode != Handshake.MODE_TRUSTED) {
+            Request req = new Request(Crypto.hex(Crypto.random(6)), name, model, via);
+            req.kind = kind;
+            synchronized (this) { requests.put(req.rid, req); }
+            hub.changed();
+            LinkService.ask(ctx, name);
+            boolean answered = req.latch.await(60, TimeUnit.SECONDS);
+            synchronized (this) { requests.remove(req.rid); }
+            LinkService.askDone(ctx);
+            hub.changed();
+            if (!answered || !req.allow) { deny(link, answered ? "declined" : "timeout"); return; }
+            remember = req.remember;
+            Pairing p = pairing;
+            if (p != null) p.consumed();
+        }
+        byte[] key = Crypto.random(32);
+        byte[] pair = remember && mode != Handshake.MODE_TRUSTED ? Crypto.random(32) : null;
+        if (pair != null) hub.ids.saveTrusted(peerId, name, model, pair, via);
+        JSONObject ok = new JSONObject().put("key", Crypto.b64(key)).put("pair", pair == null ? "" : Crypto.b64(pair))
+            .put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1).put("id", hub.ids.myId());
+        link.send(Proto.APPROVED, Proto.json(ok));
+        Session s = new Session(peerId, true, key, hub);
+        s.peerName = name;
+        s.peerModel = model;
+        s.peerSdk = sdk;
+        s.via = via;
+        s.kind = kind;
+        s.address = ip;
+        hub.attach(s, link);
+    }
+
+    private void deny(Link link, String why) {
         try { link.send(Proto.DENIED, Proto.json(new JSONObject().put("reason", why))); } catch (Exception ignored) { }
         link.close();
     }

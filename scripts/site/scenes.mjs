@@ -4,11 +4,11 @@
 
 const STATE = { v: 1, createdAt: Date.now() - 20 * 864e5, setupDone: true, settings: { theme: 'light', quality: 'standard', audio: true, auto: true, haptics: true }, outbox: [], profile: { name: '', email: '' }, updateSeen: 999999, readTexts: 3 };
 
-export async function prepare(page, { info }) {
+export async function prepare(page, { info, base }) {
   await page.evaluate((st) => { localStorage.setItem('chibarti.theme', 'light'); localStorage.setItem('chibarti.state.v1', JSON.stringify(st)); }, STATE);
   await page.reload();
   await page.waitForTimeout(1500);
-  return { info };
+  return { info, base };
 }
 
 export const reset = () => {
@@ -16,7 +16,7 @@ export const reset = () => {
   K.closeSheet();
   K.sim.reset();
   K.sim.S.env = null;
-  K.ui.stack = []; K.ui.tab = 'home'; K.ui.media = null; K.ui.picked = []; K.ui.filesSeg = 'send';
+  K.ui.stack = []; K.ui.tab = 'home'; K.ui.media = null; K.ui.picked = []; K.ui.filesSeg = 'send'; K.ui.hostFor = '';
   K.render();
   window.scrollTo(0, 0);
 };
@@ -35,6 +35,40 @@ const HISTORY = `K.ui.history = [
 const MEDIA = `K.ui.media = { items: [1, 2, 3, 4, 5, 6].map((i) => ({ uri: 'sim://p' + i, name: 'IMG_' + i + '.jpg', size: 2400000 + i * 310000, mime: i === 3 ? 'video/mp4' : 'image/jpeg' })), sel: { 'sim://p1': true, 'sim://p2': true, 'sim://p4': true, 'sim://p5': true } };`;
 const ENV = `K.sim.S.env = { sdk: 33, release: '13', model: 'Galaxy A54', p2p: true, camera: true, audioCapture: true, wifiOn: true, locationOn: true, locationNeeded: false,
   perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: '', folderName: '' };`;
+
+const PC_LINK = `K.sim.set({ mode: 'connected', host: { on: false }, devices: [],
+  link: { peerId: 'c1', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'pc', kind: 'pc', host: true, since: Date.now() - 380000, rtt: 9, state: 'active', trusted: true, quality: 'great' } });`;
+
+// The computer page itself (www/pc/), at computer size, connected to this phone and showing its screen. Last, because
+// it leaves the phone page. Its font and icon are shared with the app (on the phone they're served from the app's root).
+async function pcPage(page, arg) {
+  const app = arg.base + '/app/';
+  await page.route('**/app/pc/fonts/**', (r) => r.continue({ url: r.request().url().replace('/app/pc/fonts/', '/app/fonts/') }));
+  await page.route('**/app/pc/icon.png', (r) => r.continue({ url: app + 'icon.png' }));
+  await page.setViewportSize({ width: 1280, height: 760 });
+  await page.goto(app + 'pc/index.html');
+  await page.waitForTimeout(700);
+  await page.evaluate(async (shot) => {
+    const PC = window.PC, L = PC.L, S = PC.S, now = Date.now();
+    L.state = 'on'; L.phone = { name: 'Galaxy A54' }; L.since = now - 6 * 60e3;
+    PC.F.jobs = [
+      { tid: 1, out: true, state: 'sending', speed: 9200000, items: [{ fid: 1, name: 'מצגת לכנס.pptx', mime: 'application/vnd.ms-powerpoint', size: 15400000, done: 9900000, st: 1 }] },
+      { tid: 2, out: false, state: 'done', speed: 0, items: [{ fid: 1, name: 'IMG_20251104_183522.jpg', mime: 'image/jpeg', size: 3120000, done: 3120000, st: 3 }] }];
+    PC.F.received = [{ name: 'IMG_20251104_183522.jpg', size: 3120000, mime: 'image/jpeg', url: 'blob:x', at: now - 120000 }];
+    PC.C.msgs = [
+      { id: 'a', text: 'הנה הקישור לטופס: https://forms.example.org/r/8841', ts: now - 240000, mine: true },
+      { id: 'b', text: 'תודה! שולחת לך את התמונות', ts: now - 200000, mine: false }];
+    // the phone's screen: the app's own home screenshot stands in for the live picture
+    const img = new Image();
+    img.src = shot;
+    await img.decode();
+    const c = PC.viewCanvas;
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    S.role = 'viewing'; S.state = 'live'; S.fps = 30;
+    PC.render();
+  }, arg.base + '/shots/home.jpg');
+}
 
 const scene = (name, body, extra) => Object.assign({ name, set: new Function('arg', 'const K = window.__chibarti.CB, ui = K.ui; ' + body) }, extra || {});
 
@@ -58,6 +92,9 @@ export const SCENES = [
     { id: '4', text: 'תודה! התחברתי', ts: Date.now() - 60000, mine: false, peer: 'Redmi Note 9' }];
     K.sim.set({ textCount: 4 }); ui.tab = 'text'; K.render();`),
   scene('settings', CONNECTED + ENV + " ui.tab = 'settings'; K.render();", { wait: 800 }),
+  scene('pc', ENV + " K.A.pc();", { wait: 900 }),
+  scene('pc-approve', ENV + " K.A.pc().then(() => K.sim.set({ requests: [{ rid: 'r2', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'pc', kind: 'pc', at: Date.now() }] }));", { wait: 1100 }),
+  scene('pc-home', PC_LINK + " K.render();"),
   scene('setup', ENV + " K.pushView({ name: 'setup' });", { wait: 800 }),
   scene('privacy', "ui.tab = 'settings'; K.render(); K.openSheet('privacy');", { wait: 700 }),
   scene('share-app', CONNECTED + " ui.tab = 'settings'; K.render(); K.openSheet('shareApp');", { wait: 700 }),
@@ -67,5 +104,6 @@ export const SCENES = [
     const b = parseInt(arg.info.build, 10) || 2;
     K.VERSION.build = String(b - 1 > 0 ? b - 1 : b);
     K.update.info = { version: arg.info.version || '1.0', build: b, notes: (arg.info.notes || []).slice(0, 4), inApp: true };
-    K.openSheet('update');`, { wait: 700 })
+    K.openSheet('update');`, { wait: 700 }),
+  { name: 'pc-page', run: pcPage, wait: 600 }
 ];

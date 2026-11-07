@@ -1,0 +1,22 @@
+/* Connecting a computer: the picture, the steps with the network, the address and the code */
+.pc-art { position: relative; height: 120px; border-radius: 20px; background: var(--primary-soft); overflow: hidden; }
+.pc-art svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.pc-art .beam { fill: var(--primary); opacity: .18; }
+.pc-art .ph, .pc-art .mon { fill: var(--surface); stroke: var(--primary); stroke-width: 3; }
+.pc-art .scr { fill: var(--primary-soft); }
+.pc-art .stand { stroke: var(--primary); stroke-width: 4; stroke-linecap: round; fill: none; }
+.pc-art .sun { fill: var(--sun); }
+.pc-lead { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.55; text-align: center; }
+.pc-how { align-items: start; line-height: 1.55; }
+.pc-how > span:not(.n) { min-width: 0; padding-top: 2px; }
+.pc-box { display: flex; flex-direction: column; align-items: flex-start; margin-top: 6px; padding: 8px 12px; border-radius: 12px; background: var(--inset); }
+.pc-box b { font-size: 15px; font-weight: 700; color: var(--ink); word-break: break-all; }
+.pc-box small { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.pc-box.addr b { font-size: 21px; letter-spacing: .5px; color: var(--primary-text); font-variant-numeric: tabular-nums; }
+.pc-pin { display: block; margin-top: 4px; font-size: 32px; font-weight: 800; letter-spacing: 3px; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+.pc-how .timer { display: flex; }
+.pc-wait { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--muted); font-size: 14px; min-height: 120px; }
+.pc-wait .spin { width: 28px; height: 28px; border-radius: 14px; border: 3px solid var(--primary-soft); border-top-color: var(--primary); animation: spin .9s linear infinite; }
+.pc-fp { text-align: center; }
+.link-card .mores { display: flex; flex-wrap: wrap; justify-content: center; }
+.duo .stand { stroke: #FFFFFF; stroke-width: 4; stroke-linecap: round; fill: none; }

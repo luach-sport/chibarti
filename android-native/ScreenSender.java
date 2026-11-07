@@ -206,7 +206,7 @@ final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
                 o = q.poll();
                 qBytes -= ((byte[]) o[1]).length;
             }
-            SecureLink st = session.stream;
+            Link st = session.stream;
             int type = (Integer) o[0];
             byte[] body = (byte[]) o[1];
             if (st == null) { if (type == Proto.VIDEO_FRAME) synchronized (q) { needKey = true; } continue; }

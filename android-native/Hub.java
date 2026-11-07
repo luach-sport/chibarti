@@ -78,7 +78,7 @@ final class Hub implements Session.Listener {
             Session ss = session;
             if (ss != null && ss.state != Session.CLOSED) {
                 JSONObject l = new JSONObject();
-                l.put("peerId", ss.peerId).put("name", ss.peerName).put("model", ss.peerModel).put("via", ss.via)
+                l.put("peerId", ss.peerId).put("name", ss.peerName).put("model", ss.peerModel).put("via", ss.via).put("kind", ss.kind)
                     .put("host", ss.host).put("since", ss.startedAt).put("rtt", ss.rttMs)
                     .put("state", ss.state == Session.ACTIVE ? "active" : "reconnecting")
                     .put("trusted", ids.trustedKey(ss.peerId) != null)
@@ -109,7 +109,7 @@ final class Hub implements Session.Listener {
         return ss != null && ss.state != Session.CLOSED && !ss.peerId.equals(peerId);
     }
 
-    void attach(Session s, SecureLink link) {
+    void attach(Session s, Link link) {
         Session old;
         synchronized (this) { old = session; session = s; }
         if (old != null && old != s) old.close("replaced", true);
@@ -132,7 +132,7 @@ final class Hub implements Session.Listener {
         if (s != null && s.state != Session.CLOSED) s.control(type, o);
     }
 
-    @Override public void onMessage(Session s, SecureLink.Frame f) {
+    @Override public void onMessage(Session s, Link.Frame f) {
         if (s != session) return;
         try {
             if (f.type == Proto.CHUNK) { transfers.onChunk(f.body); return; }
@@ -152,7 +152,7 @@ final class Hub implements Session.Listener {
         }
     }
 
-    @Override public void onStreamFrame(Session s, SecureLink.Frame f) { if (s == session) mirror.onStream(f); }
+    @Override public void onStreamFrame(Session s, Link.Frame f) { if (s == session) mirror.onStream(f); }
 
     @Override public void onLinkLost(Session s) {
         transfers.onLinkLost();

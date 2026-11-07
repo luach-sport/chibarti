@@ -9,8 +9,12 @@ mkdir -p "$WORK/out"
 if [ ! -d "$JSON/src/main/java/org/json" ]; then
   git clone -q --depth 1 https://github.com/stleary/JSON-java.git "$JSON"
 fi
-PURE="Crypto SecureLink Handshake Proto Pairing QrPayload OutgoingJob IncomingJob RateControl"
+PURE="Link Crypto SecureLink Handshake Proto Pairing QrPayload OutgoingJob IncomingJob RateControl Tls WsLink WebServer"
 SRC=()
 for c in $PURE; do SRC+=("$ROOT/android-native/$c.java"); done
-javac -encoding UTF-8 -nowarn -d "$WORK/out" $(find "$JSON/src/main/java/org/json" -name '*.java') "${SRC[@]}" "$ROOT/tests/java/ChibartiTests.java" 2>&1 | grep -v '^Note:' || true
+rm -rf "$WORK/out" && mkdir -p "$WORK/out"
+if ! javac -encoding UTF-8 -nowarn -d "$WORK/out" $(find "$JSON/src/main/java/org/json" -name '*.java') "${SRC[@]}" "$ROOT/tests/java/ChibartiTests.java" 2> "$WORK/javac.log"; then
+  grep -v '^Note:' "$WORK/javac.log"
+  exit 1
+fi
 java -cp "$WORK/out" com.luachsport.chibarti.ChibartiTests

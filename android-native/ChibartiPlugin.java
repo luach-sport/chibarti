@@ -61,6 +61,15 @@ public class ChibartiPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() { if (current == this) current = null; }
 
+    /** Where the app's web files are now: the folder of the last in-app update, or null for the files inside the APK. */
+    static String webRoot() {
+        ChibartiPlugin p = current;
+        try {
+            String b = p == null || p.getBridge() == null ? null : p.getBridge().getServerBasePath();
+            return b != null && b.startsWith("/") && new java.io.File(b, "pc/index.html").isFile() ? b : null;
+        } catch (Exception e) { return null; }
+    }
+
     static void linkArrived() {
         ChibartiPlugin p = current;
         if (p != null) p.notifyListeners("link", new JSObject(), true);

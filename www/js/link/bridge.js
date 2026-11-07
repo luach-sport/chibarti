@@ -53,6 +53,7 @@
         case 'host':
           s.mode = 'hosting';
           s.host = { on: true, ready: true, method: 'd', error: '', network: 'DIRECT-k7-Galaxy A54', pin: '482193', expiresAt: now() + 9.5 * 60e3,
+            pass: 'k7Rw2pQx', addresses: ['192.168.49.1', '192.168.1.23'], web: { http: 8080, https: 8443, fp: 'AC:3D:A3:5D:2A:1E:91:AD' },
             qr: 'chibarti://join?v=1&i=0123456789abcdef0123456789abcdef&n=Galaxy%20A54&t=Qm9vbS1ib29tLWJvb20tIQ&m=d&s=DIRECT-k7-Galaxy&k=pass1234&a=192.168.49.1&p=47821&e=' + Math.round(now() / 1000 + 600) };
           changed(); return {};
         case 'stopHost': s.mode = 'idle'; s.host = base().host; changed(); return {};

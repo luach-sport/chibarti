@@ -54,12 +54,12 @@
     html: () => {
       const list = (CB.L().devices || []).slice().sort((a, b) => (b.last || 0) - (a.last || 0));
       let h = '<div class="bar-top"><button type="button" class="icon-btn" aria-label="חזרה" data-action="back">' + icon('back') + '</button><h1 class="grow">מכשירים מוכרים</h1></div>';
-      h += '<p class="fine" style="font-size:14px">טלפון שאישרת פעם אחת נשמר כאן עם מפתח סודי משלו. בפעם הבאה הוא מתחבר בלי קוד, כשאחד הטלפונים לוחץ "התחלת חיבור" והשני בוחר אותו מהרשימה.</p>';
+      h += '<p class="fine" style="font-size:14px">טלפון שאישרת פעם אחת נשמר כאן עם מפתח סודי משלו. בפעם הבאה הוא מתחבר בלי קוד, כשאחד הטלפונים לוחץ "התחלת חיבור" והשני בוחר אותו מהרשימה. מחשב מוכר מתחבר בלי קוד כשכאן פותחים "חיבור למחשב".</p>';
       const link = CB.L().link;
       if (!list.length) return h + '<div class="empty">' + CB.emptyArt() + '<h2>עוד אין מכשירים מוכרים</h2><p>אחרי החיבור הראשון, אם משאירים את "לזכור את המכשיר", הוא יופיע כאן.</p></div>';
       h += '<div class="card list">' + list.map((d) => {
         const now = link && link.peerId === d.id;
-        return '<div class="row"><span class="tile' + (now ? ' ok' : '') + '">' + icon('phone') + '</span><span class="grow"><span class="t">' + esc(d.name || 'טלפון') + (now ? ' <span class="badge green">מחובר עכשיו</span>' : '') + '</span>' +
+        return '<div class="row"><span class="tile' + (now ? ' ok' : '') + '">' + icon(d.via === 'pc' ? 'monitor' : 'phone') + '</span><span class="grow"><span class="t">' + esc(d.name || (d.via === 'pc' ? 'מחשב' : 'טלפון')) + (now ? ' <span class="badge green">מחובר עכשיו</span>' : '') + '</span>' +
           '<span class="s">' + esc(d.model || '') + (d.last ? ' · חיבור אחרון: ' + esc(CB.ago(d.last)) : '') + (d.via ? ' · ' + esc(CB.viaLabel(d.via)) : '') + '</span></span>' +
           (now ? '<button type="button" class="btn small secondary" data-action="disconnect">ניתוק</button>' : '<button type="button" class="btn small secondary" data-action="forget" data-id="' + esc(d.id) + '" data-name="' + esc(d.name) + '">שכחה</button>') + '</div>';
       }).join('') + '</div>';

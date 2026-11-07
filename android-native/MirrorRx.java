@@ -35,6 +35,7 @@ final class MirrorRx {
                 case Proto.VIDEO_CONFIG: video = new Proto.Config(body); if (v != null) v.onVideoConfig(video); break;
                 case Proto.VIDEO_FRAME: if (v != null) v.onVideo(body); break;
                 case Proto.AUDIO_CONFIG: audio = new Proto.Config(body); if (v != null) v.onAudioConfig(audio); break;
+                case Proto.AUDIO_OPUS_CONFIG: { Proto.Config c = new Proto.Config(body); c.mime = "audio/opus"; audio = c; if (v != null) v.onAudioConfig(c); break; }
                 case Proto.AUDIO_FRAME: if (v != null) v.onAudio(body); break;
                 default: break;
             }

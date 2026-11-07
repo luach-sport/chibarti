@@ -43,6 +43,24 @@ Wire protocol (`Proto.java`): handshake `CHB1` (mode QR=1, PIN=2, TRUSTED=3, RES
 FILE_END, FILE_ACK, CANCEL, PAUSE, RESUME, MIRROR_*, KEY_REQUEST); CHUNK and media frames are binary.
 QR content: `chibarti://join?v=1&i=<id>&n=<name>&t=<16-byte token>&m=<d|h|l>&s=<ssid>&k=<pass>&a=<ips>&p=<port>&e=<expiry>`.
 
+Computer (browser, no install): while hosting, `Connect.startWeb()` runs `WebServer` (8080 plain → explanation page and a
+link to 8443; 8443 HTTPS with the phone's own ECDSA certificate from `Tls`, persisted in files/tls). It serves `www/pc/`
+(from the in-app update folder when there is one, else the APK assets; `fonts/`, `icon.png`, `logo.svg` from the app
+root) and upgrades `/ws` to `WsLink` (implements `Link`, so `Session` doesn't care). First message HELLO
+`{mode: pin|trusted|resume|stream, id (32 hex, kept in the browser), name, model, pin | key}`; `Connect.pcAccepted`
+checks the code (counted like phones) or the remembered key, asks on the phone (`kind: "pc"`), answers APPROVED with a
+session key (resume/stream) and a pair key (remember). The computer is always the joiner, so it opens the stream
+connection (after MIRROR_REPLY in either direction, and again after a resume). Phone→computer video: the phone's
+H.264 Annex B, decoded with WebCodecs (SPS/PPS from VIDEO_CONFIG prepended to key frames), AAC with AudioDecoder,
+played with Web Audio. Computer→phone: getDisplayMedia → MediaStreamTrackProcessor (Chrome/Edge; other browsers copy
+a video element to a canvas) → VideoEncoder H.264 constrained baseline, annexb, realtime; frames are skipped *before*
+encoding when the socket backs up, bitrate lowered / raised every 2 s; VIDEO_CONFIG only when SPS/PPS/size change.
+Sound: AudioEncoder Opus → `AUDIO_OPUS_CONFIG` (OpusHead) → `AudioPlayer` with csd-1/csd-2 (pre-skip, pre-roll).
+Received files: in memory then a download, or straight into a folder (File System Access, Chrome/Edge).
+Limits: TLS is self-signed (one browser warning; the phone shows its fingerprint), and the PIN goes inside TLS, so an
+attacker who can intercept the computer's first connection and whom the user lets through the warning could relay it —
+the phone's approval with the computer's name is the last check.
+
 ## Implemented
 Everything listed in README "מה יש באפליקציה": QR + PIN pairing with expiry and brute-force renewal, approval, trusted
 devices with per-device keys, nearby discovery (Wi-Fi Direct DNS-SD + LAN beacons), three network paths, auto-reconnect
@@ -59,7 +77,8 @@ page, privacy page, settings, in-app updates, feedback, app sharing (also straig
   exchange (no PAKE). Mitigations: 10-minute expiry, one-time use, explicit approval with the device name. QR mode uses a
   128-bit token and is not affected. A SPAKE2 handshake would remove this.
 - Bluetooth is not used at all (the brief allowed it only as optional discovery help).
-- One peer at a time; no group/multi-device sharing.
+- One peer at a time (a phone or a computer); no group/multi-device sharing.
+- Computer page: needs a browser with WebCodecs for the screen (Chrome/Edge 94+, Firefox 130+, Safari 16.4+ for viewing); files and messages work everywhere. Phone sound to the computer needs Android 10+.
 - A/V sync is "near" (both played immediately, stale audio dropped); no lip-sync buffer.
 - Transfer resume works while both apps stay alive; if a process is killed the transfer restarts.
 - English UI not included (the owner's apps are Hebrew-only).

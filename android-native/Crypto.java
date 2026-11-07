@@ -114,6 +114,24 @@ final class Crypto {
         return sb.toString();
     }
 
+    private static final char[] B64S = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".toCharArray();
+
+    /** Standard base64 with padding (for the WebSocket handshake). */
+    static String b64std(byte[] b) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < b.length; i += 3) {
+            int n = (b[i] & 255) << 16 | (i + 1 < b.length ? (b[i + 1] & 255) << 8 : 0) | (i + 2 < b.length ? b[i + 2] & 255 : 0);
+            sb.append(B64S[(n >> 18) & 63]).append(B64S[(n >> 12) & 63]);
+            sb.append(i + 1 < b.length ? B64S[(n >> 6) & 63] : '=');
+            sb.append(i + 2 < b.length ? B64S[n & 63] : '=');
+        }
+        return sb.toString();
+    }
+
+    static byte[] sha1(byte[] b) {
+        try { return MessageDigest.getInstance("SHA-1").digest(b); } catch (Exception e) { throw new IllegalStateException(e); }
+    }
+
     static byte[] unb64(String s) {
         if (s == null) throw new IllegalArgumentException("b64");
         s = s.replace('+', '-').replace('/', '_').replace("=", "");

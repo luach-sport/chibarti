@@ -11,11 +11,11 @@
     title: () => 'בקשת חיבור',
     init: () => { ui.form = { remember: true }; },
     render: (d) => {
-      const r = reqOf(d.rid) || {};
-      return '<div class="req-head"><span class="avatar">' + icon('phone', 'lg') + '</span><h3>' + esc(r.name || 'טלפון') + ' רוצה להתחבר</h3>' +
-        '<p>' + esc(r.model || '') + (r.via ? ' · ' + esc(CB.viaLabel(r.via)) : '') + '<br>מאשרים רק אם זה הטלפון שאתם מחברים עכשיו.</p></div>' +
+      const r = reqOf(d.rid) || {}, pc = r.kind === 'pc';
+      return '<div class="req-head"><span class="avatar">' + icon(pc ? 'monitor' : 'phone', 'lg') + '</span><h3>' + esc(r.name || (pc ? 'מחשב' : 'טלפון')) + ' רוצה להתחבר</h3>' +
+        '<p>' + (pc ? 'מחשב, דרך הדפדפן' : esc(r.model || '') + (r.via ? ' · ' + esc(CB.viaLabel(r.via)) : '')) + '<br>מאשרים רק אם זה ה' + (pc ? 'מחשב' : 'טלפון') + ' שאתם מחברים עכשיו.</p></div>' +
         '<button type="button" class="check-row" role="checkbox" aria-checked="' + !!ui.form.remember + '" data-action="toggle-remember"><span class="box">' + (ui.form.remember ? icon('check', 'xs') : '') + '</span>' +
-        '<span class="grow">לזכור את הטלפון הזה (בפעם הבאה בלי קוד)</span></button>' +
+        '<span class="grow">לזכור את ה' + (pc ? 'מחשב' : 'טלפון') + ' הזה (בפעם הבאה בלי קוד)</span></button>' +
         '<div class="btn-row"><button type="button" class="btn secondary" data-action="approve" data-allow="0">דחייה</button><button type="button" class="btn" data-action="approve" data-allow="1">' + icon('check') + 'אישור</button></div>';
     }
   };

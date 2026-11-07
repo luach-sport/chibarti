@@ -4,10 +4,11 @@
 
 | Suite | Command | What it covers | Status when v1.0 was built |
 |---|---|---|---|
-| Protocol (plain Java) | `bash tests/java/run.sh` | base64url, HKDF (RFC 5869 vector), QR handshake over a real TCP socket, wrong 6-digit code refused and counted, expired secret refused, wrong host id refused, tampered frame detected, replayed frame detected, code expiry after 10 min and renewal after 5 wrong tries, QR payload parse/validation (version, prefix, port, address, token, password, method, expiry), safe file names, 3 MB + empty file with SHA-256, corrupted chunk → file deleted, out-of-order / oversized chunks refused, cancel deletes partial file, resume after a dropped link, chunks over the real encrypted socket, automatic bitrate down/up, video config packet | 19/19 passed locally; also runs in every CI build |
-| Screens (Playwright, 320×640) | `node tests/app.test.mjs` (with `www/` served on :8765) | Hebrew sizes/times, Hebrew prefix before Latin names, file kinds, QR drawn and read back by jsQR, host page, approval sheet opens/closes by itself, nearby list, keypad, connected card, progress updated in place (no redraw), photo grid toggle, offer sheet with APK warning, messages keep the draft, no sideways scrolling on every tab/page/sheet, dark theme, no page errors | 32/32 passed locally |
+| Protocol (plain Java) | `bash tests/java/run.sh` | base64url, HKDF (RFC 5869 vector), QR handshake over a real TCP socket, wrong 6-digit code refused and counted, expired secret refused, wrong host id refused, tampered frame detected, replayed frame detected, code expiry after 10 min and renewal after 5 wrong tries, QR payload parse/validation (version, prefix, port, address, token, password, method, expiry), safe file names, 3 MB + empty file with SHA-256, corrupted chunk → file deleted, out-of-order / oversized chunks refused, cancel deletes partial file, resume after a dropped link, chunks over the real encrypted socket, automatic bitrate down/up, video config packet; for the computer: WebSocket accept key (RFC 6455), the phone's certificate kept and valid, a masked fragmented WebSocket message both ways over TLS with one clean close | 22/22 passed locally; also runs in every CI build |
+| Screens (Playwright, 320×640) | `node tests/app.test.mjs` (with `www/` served on :8765) | Hebrew sizes/times, Hebrew prefix before Latin names, file kinds, QR drawn and read back by jsQR, host page, approval sheet opens/closes by itself, nearby list, keypad, connected card, progress updated in place (no redraw), photo grid toggle, offer sheet with APK warning, messages keep the draft, no sideways scrolling on every tab/page/sheet, dark theme, no page errors | 37/37 passed locally (incl. the "חיבור למחשב" page, its approval and the connected home) |
 | Java compile check | `javac` against `android.jar` API 34 + Capacitor stubs | every class in `android-native/` compiles | passed locally; the real Gradle build runs in CI |
-| Site screenshots | Itzko kit `build.mjs` | all 19 scenes render without app errors | passed locally |
+| Computer page (Playwright, 1366×820) | `node tests/pc.test.mjs` | the page in `www/pc/` against `tests/java/FakePhone.java`, which runs the app's real `WebServer` + `Tls` + `WsLink`: port 8080 explanation, HTTPS + secure context, wrong / right code, messages with links, 3 MB to the phone (SHA-256 checked), 2.5 MB from the phone (download checked byte by byte), the phone's H.264 picture decoded and drawn, this screen + sound encoded (H.264 + Opus) and the recording verified by ffprobe, dropped link resumed, remembered computer, phone leaving, narrow window | 14/14 passed for v1.1 |
+| Site screenshots | Itzko kit `build.mjs` | all scenes render without app errors (incl. the computer page at 1280×760) | passed locally |
 
 Nothing that needs radio hardware (Wi-Fi Direct, hotspot, MediaProjection, MediaCodec, AudioPlaybackCapture,
 camera) can run in these tests. Those parts were compiled and reviewed, **not executed**. They need the checklist below.
@@ -77,6 +78,18 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] History lists everything sent/received with day groups and filter; clearing it keeps the files.
 - [ ] Settings → שיתוף האפליקציה → "לשלוח לטלפון המחובר" sends chibarti.apk to the other phone.
 - [ ] With internet: "בדיקת עדכונים" works; feedback reaches the developer's e-mail.
+
+### Computer (one phone + a Windows / Mac computer with Chrome or Edge)
+- [ ] Home → "חיבור למחשב": network name, password, address (192.168.49.1:8080) and code appear.
+- [ ] Computer joins the phone's Wi-Fi (DIRECT-…); opening the address shows the explanation page, then the "not private" warning; Advanced → Continue opens the page.
+- [ ] Wrong code → clear message; right code → the phone asks "מחשב Windows רוצה להתחבר"; approve → both sides connected.
+- [ ] Same Wi-Fi path: with the phone on a home Wi-Fi, the computer on the same Wi-Fi opens the second address shown.
+- [ ] Drag a 2 GB file onto the page → arrives on the phone, checked. Phone → computer: a video arrives as a download (or into the chosen folder in Chrome/Edge).
+- [ ] Phone "מסך → התחלת שיתוף" → the computer asks → the picture appears, full screen works (no sound from Android 9; sound from Android 10+).
+- [ ] Computer "להציג בטלפון" with "שיתוף אודיו" → the phone asks → full-screen picture with the computer's sound; switching windows on the computer keeps it running.
+- [ ] Turn the phone's Wi-Fi off/on for a few seconds → the page shows "מתחבר שוב" and continues; a transfer resumes.
+- [ ] Reload the page with "לזכור" on → connects without a code (the phone on "חיבור למחשב").
+- [ ] After an in-app update, the computer page served is the updated one.
 
 ## 3. Android versions to cover if possible
 Android 6.0 (API 23, the minimum), 8.x (local hotspot appears), 9 (last legacy Wi-Fi join), 10 (P2P join from QR,

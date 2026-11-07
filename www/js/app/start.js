@@ -29,6 +29,7 @@
   function tick() {
     const n = CB.screenName();
     if (n === 'host') CB.views.host.tick();
+    else if (n === 'pc') CB.views.pc.tick();
     else if (n === 'home' && CB.L().link) CB.views.home.live();
   }
 

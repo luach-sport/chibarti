@@ -47,10 +47,10 @@
     if (mode === 'connected' && prevMode !== 'connected' && prevMode !== 'reconnecting') {
       // connected: close the connect / scan / nearby pages and show the connected home
       const v = CB.view();
-      if (v && (v.name === 'host' || v.name === 'scan' || v.name === 'nearby')) { ui.stack = []; ui.tab = 'home'; CB.render(); }
+      if (v && (v.name === 'host' || v.name === 'pc' || v.name === 'scan' || v.name === 'nearby')) { ui.stack = []; ui.tab = 'home'; CB.render(); }
       CB.haptic(true);
     }
-    if (mode === 'hosting' && prevMode !== 'hosting' && !CB.view()) CB.pushView({ name: 'host' });
+    if (mode === 'hosting' && prevMode !== 'hosting' && !CB.view()) CB.pushView({ name: ui.hostFor === 'pc' ? 'pc' : 'host' });
     prevMode = mode;
     autoSheets(s);
     CB.refresh();

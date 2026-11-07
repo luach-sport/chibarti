@@ -21,10 +21,18 @@ final class AudioPlayer {
     @SuppressWarnings("deprecation")
     boolean start(Proto.Config c) {
         try {
-            int rate = c.a, ch = c.b;
-            MediaFormat f = MediaFormat.createAudioFormat("audio/mp4a-latm", rate, ch);
+            int rate = c.a, ch = Math.max(1, Math.min(2, c.b));
+            boolean opus = "audio/opus".equals(c.mime);
+            if (opus) rate = 48000; // Opus always decodes at 48 kHz
+            MediaFormat f = MediaFormat.createAudioFormat(c.mime, rate, ch);
             f.setByteBuffer("csd-0", ByteBuffer.wrap(c.csd0));
-            dec = MediaCodec.createDecoderByType("audio/mp4a-latm");
+            if (opus) {
+                // Android's Opus decoder also wants the pre-skip and the seek pre-roll, in nanoseconds (little-endian)
+                int preSkip = c.csd0.length >= 12 ? (c.csd0[10] & 255) | (c.csd0[11] & 255) << 8 : 312;
+                f.setByteBuffer("csd-1", le64(preSkip * 1_000_000_000L / 48000));
+                f.setByteBuffer("csd-2", le64(80_000_000L));
+            }
+            dec = MediaCodec.createDecoderByType(c.mime);
             dec.configure(f, null, null, 0);
             dec.start();
             int mask = ch == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO;
@@ -39,6 +47,13 @@ final class AudioPlayer {
         out = new Thread(this::play, "audio-dec");
         out.start();
         return true;
+    }
+
+    private static ByteBuffer le64(long v) {
+        ByteBuffer b = ByteBuffer.allocate(8).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        b.putLong(v);
+        b.flip();
+        return b;
     }
 
     void feed(byte[] body) {
