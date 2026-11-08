@@ -25,6 +25,13 @@ PKG=$(sed -n 's/^package \(.*\);/\1/p' "$MAIN")
 [ "$PKG" = "com.luachsport.chibarti" ] || { echo "unexpected package $PKG"; exit 1; }
 cp android-native/*.java "$DIR/"
 
+# Gradle itself: the smaller download and a longer wait (services.gradle.org is sometimes slow from CI)
+WRAP=android/gradle/wrapper/gradle-wrapper.properties
+if [ -f "$WRAP" ]; then
+  sed -i 's/-all\.zip/-bin.zip/' "$WRAP"
+  if grep -q '^networkTimeout=' "$WRAP"; then sed -i 's/^networkTimeout=.*/networkTimeout=120000/' "$WRAP"; else echo 'networkTimeout=120000' >> "$WRAP"; fi
+fi
+
 # chibarti://join links (a QR scanned with the phone's own camera opens the app and connects)
 perl -0pi -e 's|(<activity\b[^>]*android:name="\.MainActivity"[^>]*>)|$1\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="chibarti" android:host="join" />\n            </intent-filter>|s' "$MAN"
 grep -q 'android:scheme="chibarti"' "$MAN" || { echo "deep link not added"; exit 1; }

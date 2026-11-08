@@ -96,6 +96,8 @@ jobs:
           chmod +x gradlew
           set -o pipefail
           if [ "$SIGNED" = "true" ]; then TASK=assembleRelease; OUT=release/app-release.apk; else TASK=assembleDebug; OUT=debug/app-debug.apk; fi
+          # Gradle's own download sometimes times out: try it again a few times before building
+          for i in 1 2 3 4; do ./gradlew --version > /dev/null 2>&1 && break; echo "Gradle download failed, retrying ($i)"; sleep $((i * 15)); done
           # Compile errors (the app's own Java code in android-native/) show up as annotations on the run, not only in the long log.
           if ! ./gradlew "$TASK" --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle.log"; then
             grep -E "\.java:[0-9]+: error|error:|What went wrong" -A2 "$RUNNER_TEMP/gradle.log" | head -30 | while IFS= read -r l; do echo "::error::$l"; done
