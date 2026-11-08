@@ -299,6 +299,7 @@ public class ChibartiPlugin extends Plugin {
     @PluginMethod public void controlAnswer(PluginCall call) { hub.control.answer(call.getBoolean("allow", false)); call.resolve(); }
     @PluginMethod public void controlStop(PluginCall call) { hub.control.stop(true); call.resolve(); }
     @PluginMethod public void controlSettings(PluginCall call) { hub.control.openSettings(); call.resolve(); }
+    @PluginMethod public void controlPlayProtect(PluginCall call) { ControlLink.openPlayProtect(getContext()); call.resolve(); }
 
     // ---------- the phone: permissions, Wi-Fi, location, battery ----------
     private boolean granted(String p) { return ctx().checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED; }

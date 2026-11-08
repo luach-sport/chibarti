@@ -61,9 +61,16 @@ Limits: TLS is self-signed (one browser warning; the phone shows its fingerprint
 attacker who can intercept the computer's first connection and whom the user lets through the warning could relay it —
 the phone's approval with the computer's name is the last check.
 
-Remote control (v1.2): `CONTROL_ASK` 35 / `CONTROL_REPLY` 36 / `CONTROL_STOP` 37 / `INPUT` 38. The watcher asks; the
-sharer answers in a sheet (`www/js/sheets/control.js`); if `ControlService` (AccessibilityService, canPerformGestures,
-canRetrieveWindowContent) isn't on, Settings opens and `Control.onServiceReady` sends the answer when it comes on.
+Remote control (v1.2; v1.3 moved the accessibility service out of the app): Play Protect's enhanced fraud protection
+blocks sideloading any app that declares an accessibility service (like SMS/notification-listener apps), so the
+installed app has none. The add-on `control-app/` ("חיברתי – שליטה", com.luachsport.chibarti.control, minSdk 24, no
+dependencies, same signing key) holds `ControlService` + `Input` + `Gestures` and a setup screen; the app reaches it
+through `ControlLink` (installed? enabled via AccessibilityManager? open its SetupActivity; INPUT as an explicit
+broadcast guarded by the signature permission com.luachsport.chibarti.permission.CONTROL, declared in both).
+`Control` roles add `install` (download chibarti-control.apk; if Play Protect blocks it, turn off "scan apps" briefly)
+and `setup` (turn it on in Accessibility; Android 13+ may need "Allow restricted settings"); it polls every 1.5 s
+and answers by itself when ready. `CONTROL_ASK` 35 / `CONTROL_REPLY` 36 / `CONTROL_STOP` 37 / `INPUT` 38. The watcher asks; the
+sharer answers in a sheet (`www/js/sheets/control.js`), which walks through the add-on when it's missing or off.
 INPUT JSON: `g` stroke `[[x,y,ms],…]` (fractions of the shared screen; sent when the finger/mouse lifts and replayed with
 its timing, ≤4 s), `w` scroll (`dy` fraction of the height), `k` key (back/home/recents/notifications/backspace/enter;
 PC: esc/win/enter/backspace/tab), `s` text (inserted at the cursor of the focused field with ACTION_SET_TEXT).

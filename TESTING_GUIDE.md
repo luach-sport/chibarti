@@ -102,8 +102,9 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] Reinstall the app on the phone → the program says the phone looks different; scanning again fixes it.
 
 ### Remote control
-- [ ] Phone A shares, phone B watches → B taps ☝ "שליטה" → A asks; first time A opens Accessibility settings → turn on "חיברתי – שליטה מרחוק" → back → B can tap, swipe, long-press, use ◁ ○ ▢, type with ⌨ (Hebrew too).
-- [ ] Android 13+ on A: if the switch is grey, App info → ⋮ → "Allow restricted settings".
+- [ ] Updating the app itself (1.1 → 1.3) is not blocked by Play Protect (the app has no accessibility service).
+- [ ] Phone A shares, phone B watches → B taps ☝ "שליטה" → A: "לאפשר שליטה" → the add-on sheet → download chibarti-control.apk → install (if Play Protect blocks: Play Protect ⚙ → turn off "scan apps", install, turn it back on) → back to חיברתי: the sheet moves to "turn it on" → "הפעלה" opens the add-on's screen → Accessibility → "חיברתי – שליטה" on → back: B gets the answer by itself → B can tap, swipe, long-press, use ◁ ○ ▢, type with ⌨ (Hebrew too).
+- [ ] Android 13+ on A: if the switch is grey, the add-on's App info → ⋮ → "Allow restricted settings".
 - [ ] Computer watches a phone → "שליטה" → mouse click / drag / wheel / right click (back) / typing on the keyboard.
 - [ ] Phone watches the computer (program, whole screen shared) → "שליטה" → the computer asks "לאפשר" → taps click, long press right-clicks, drag drags, ⌨ types, Esc / ⊞ / ↵ / ⌫ keys work. With a window shared instead of the whole screen, the phone is told to share the whole screen.
 - [ ] Stop from either side, from the notification, or by ending screen sharing → control ends; inputs no longer arrive.

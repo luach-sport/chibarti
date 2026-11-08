@@ -1,0 +1,26 @@
+// "חיברתי – שליטה" (the remote-control add-on). Built in CI with the Android project's Gradle:
+//   android/gradlew -p control-app assembleRelease   (signed with the app's key, so the two may talk)
+plugins { id 'com.android.application' version '8.7.2' }
+
+android {
+    namespace 'com.luachsport.chibarti.control'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.luachsport.chibarti.control'
+        minSdk 24
+        targetSdk 34
+        versionCode((System.getenv('BUILD') ?: '1') as int)
+        versionName(System.getenv('APP_VERSION') ?: 'dev')
+    }
+    signingConfigs {
+        chibarti {
+            storeFile file('../signing/release.jks')
+            storePassword System.getenv('CHIBARTI_STORE_PASSWORD')
+            keyAlias System.getenv('CHIBARTI_KEY_ALIAS')
+            keyPassword System.getenv('CHIBARTI_KEY_PASSWORD')
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.chibarti } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    lint { abortOnError false; checkReleaseBuilds false }
+}

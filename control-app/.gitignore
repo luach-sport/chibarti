@@ -1,0 +1,4 @@
+build/
+.gradle/
+src/main/res/mipmap-*/
+src/main/res/values/ic_launcher_background.xml

@@ -32,13 +32,16 @@
     if (!(s.mirror && s.mirror.role === 'asked')) { shown.mirror = false; if (CB.sheetIs('mirrorAsk')) CB.closeSheet(); }
     // 3) the device watching this screen wants to control it (also while the accessibility setting is being turned on)
     const cr = s.control && s.control.role;
-    if ((cr === 'asked' || cr === 'setup') && !shown.control) {
+    if ((cr === 'asked' || cr === 'install' || cr === 'setup') && !shown.control) {
       shown.control = true;
+      shown.controlRole = cr;
       CB.haptic(true);
       CB.openSheet('control');
       return;
     }
-    if (cr !== 'asked' && cr !== 'setup') { shown.control = false; if (CB.sheetIs('control')) CB.closeSheet(); }
+    // the request moves on (download the add-on → turn it on): the open sheet shows the next step
+    if (shown.control && cr !== shown.controlRole && CB.sheetIs('control') && (cr === 'install' || cr === 'setup')) { shown.controlRole = cr; CB.renderSheet(); }
+    if (cr !== 'asked' && cr !== 'install' && cr !== 'setup') { shown.control = false; if (CB.sheetIs('control')) CB.closeSheet(); }
     // 4) files waiting for approval
     const off = (s.offers || [])[0];
     if (off && !shown.offer[off.tid] && !CB.sheetIs('approve') && !CB.sheetIs('mirrorAsk')) {

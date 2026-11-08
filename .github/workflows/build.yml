@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      APP_VERSION: '1.2'
+      APP_VERSION: '1.3'
     steps:
       - uses: actions/checkout@v5
 
@@ -110,6 +110,33 @@ jobs:
           "$BT/apksigner" verify --print-certs chibarti.apk | head -5 || true
           "$BT/aapt" dump badging chibarti.apk 2>/dev/null | grep -E "package|sdkVersion|targetSdk|application-label" | head -6 || true
 
+      - name: Remote-control add-on (chibarti-control.apk)
+        if: steps.key.outputs.signed == 'true'
+        id: addon
+        continue-on-error: true
+        env:
+          CHIBARTI_STORE_PASSWORD: ${{ secrets.CHIBARTI_KEY_PASS }}
+          CHIBARTI_KEY_PASSWORD: ${{ secrets.CHIBARTI_KEY_PASS }}
+          CHIBARTI_KEY_ALIAS: chibarti
+          BUILD: ${{ github.run_number }}
+        run: |
+          # a separate small app, signed with the same key: Play Protect blocks apps with an accessibility service,
+          # so the app itself has none and only phones that should be controlled add this
+          cp -R android-res/mipmap-* control-app/src/main/res/
+          cp android-res/values/ic_launcher_background.xml control-app/src/main/res/values/
+          set -o pipefail
+          if ! android/gradlew -p control-app assembleRelease --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/control.log"; then
+            grep -E "\.java:[0-9]+: error|error:|What went wrong" -A2 "$RUNNER_TEMP/control.log" | head -30 | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1
+          fi
+          cp "$(find control-app/build/outputs/apk/release -name '*.apk' | head -1)" chibarti-control.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          A=$("$BT/apksigner" verify --print-certs chibarti.apk | grep SHA-256 | head -1)
+          B=$("$BT/apksigner" verify --print-certs chibarti-control.apk | grep SHA-256 | head -1)
+          echo "$B"
+          [ -n "$A" ] && [ "$A" = "$B" ] || { echo "::error::the add-on must be signed with the app's key"; exit 1; }
+          "$BT/aapt" dump badging chibarti-control.apk 2>/dev/null | grep -E "package|sdkVersion|application-label" | head -4 || true
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
@@ -143,9 +170,10 @@ jobs:
           TAG="v${APP_VERSION}-build${GITHUB_RUN_NUMBER}"
           WHATS_NEW=""
           if [ -f release-notes.txt ]; then WHATS_NEW=$'\n\nמה חדש:\n'"$(sed 's/^/• /' release-notes.txt)"; fi
-          NOTES=$'חיברתי – שני טלפונים, בלי אינטרנט. גרסה '"${APP_VERSION}"$' (בנייה '"${GITHUB_RUN_NUMBER}"$')'"${WHATS_NEW}"$'\n\nלהתקנה: מורידים את chibarti.apk בטלפון ופותחים אותו. בהתקנה הראשונה מאשרים "התקנה ממקור לא ידוע".\nלמחשב (Windows): מורידים את chibarti-pc.exe ופותחים. בפעם הראשונה Windows שואל, ולוחצים "מידע נוסף" ואז "הפעל בכל זאת".\nהעדכונים הבאים נכנסים מתוך האפליקציה. המכשירים המוכרים וההיסטוריה תמיד נשארים.'
+          NOTES=$'חיברתי – שני טלפונים, בלי אינטרנט. גרסה '"${APP_VERSION}"$' (בנייה '"${GITHUB_RUN_NUMBER}"$')'"${WHATS_NEW}"$'\n\nלהתקנה: מורידים את chibarti.apk בטלפון ופותחים אותו. בהתקנה הראשונה מאשרים "התקנה ממקור לא ידוע".\nשליטה מרחוק בטלפון: בטלפון שרוצים לשלוט בו מתקינים גם את התוסף chibarti-control.apk (חיברתי מסבירה כשצריך).\nלמחשב (Windows): מורידים את chibarti-pc.exe ופותחים. בפעם הראשונה Windows שואל, ולוחצים "מידע נוסף" ואז "הפעל בכל זאת".\nהעדכונים הבאים נכנסים מתוך האפליקציה. המכשירים המוכרים וההיסטוריה תמיד נשארים.'
           ASSETS=(chibarti.apk)
           if [ -f dist-pc/chibarti-pc.exe ]; then ASSETS+=(dist-pc/chibarti-pc.exe); fi
+          if [ -f chibarti-control.apk ]; then ASSETS+=(chibarti-control.apk); fi
           if [ -f dist/bundle.zip ] && [ -f dist/update.json ]; then ASSETS+=(dist/bundle.zip dist/update.json); fi
           gh release create "$TAG" "${ASSETS[@]}" --title "חיברתי ${APP_VERSION} (בנייה ${GITHUB_RUN_NUMBER})" --notes "$NOTES" --latest
 

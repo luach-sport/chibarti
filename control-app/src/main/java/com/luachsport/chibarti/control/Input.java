@@ -1,4 +1,4 @@
-package com.luachsport.chibarti;
+package com.luachsport.chibarti.control;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Context;
@@ -31,7 +31,7 @@ final class Input {
                 case "s": type(svc, o.optString("s")); break;
                 default: break;
             }
-        } catch (Exception e) { android.util.Log.w("Chibarti", "input", e); }
+        } catch (Exception e) { android.util.Log.w("ChibartiControl", "input", e); }
     }
 
     @SuppressWarnings("deprecation")

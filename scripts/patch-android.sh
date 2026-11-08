@@ -29,9 +29,7 @@ cp android-native/*.java "$DIR/"
 perl -0pi -e 's|(<activity\b[^>]*android:name="\.MainActivity"[^>]*>)|$1\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="chibarti" android:host="join" />\n            </intent-filter>|s' "$MAN"
 grep -q 'android:scheme="chibarti"' "$MAN" || { echo "deep link not added"; exit 1; }
 
-perl -0pi -e 's|</application>|        <service android:name=".LinkService" android:exported="false" android:foregroundServiceType="connectedDevice\|mediaProjection" />\n        <service android:name=".ControlService" android:exported="true" android:label="\@string\/control_label" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">\n            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" \/><\/intent-filter>\n            <meta-data android:name="android.accessibilityservice" android:resource="\@xml\/chibarti_control" \/>\n        <\/service>\n        <activity android:name=".ViewerActivity" android:exported="false" android:launchMode="singleTop" android:screenOrientation="fullUser" android:configChanges="orientation\|screenSize\|screenLayout\|smallestScreenSize\|keyboardHidden\|density" android:theme="\@android:style/Theme.Black.NoTitleBar.Fullscreen" android:excludeFromRecents="true" />\n    </application>|' "$MAN"
-
-grep -q 'ControlService' "$MAN" || { echo "control service not added"; exit 1; }
+perl -0pi -e 's|</application>|        <service android:name=".LinkService" android:exported="false" android:foregroundServiceType="connectedDevice\|mediaProjection" />\n        <activity android:name=".ViewerActivity" android:exported="false" android:launchMode="singleTop" android:screenOrientation="fullUser" android:configChanges="orientation\|screenSize\|screenLayout\|smallestScreenSize\|keyboardHidden\|density" android:theme="\@android:style/Theme.Black.NoTitleBar.Fullscreen" android:excludeFromRecents="true" />\n    </application>|' "$MAN"
 
 PERMS='    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
@@ -55,7 +53,12 @@ PERMS='    <uses-permission android:name="android.permission.ACCESS_NETWORK_STAT
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />'
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!-- remote control of this phone lives in a separate add-on (control-app/): Play Protect blocks sideloaded apps
+         with an accessibility service, so the app itself stays without one. Only apps signed by us may talk to it. -->
+    <permission android:name="com.luachsport.chibarti.permission.CONTROL" android:protectionLevel="signature" />
+    <uses-permission android:name="com.luachsport.chibarti.permission.CONTROL" />
+    <queries><package android:name="com.luachsport.chibarti.control" /></queries>'
 PERMS="$PERMS" perl -0pi -e 's|</manifest>|$ENV{PERMS}\n</manifest>|' "$MAN"
 
 # Android 6-9 save received files straight into Download/Pictures (legacy storage until Android 10)

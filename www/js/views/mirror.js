@@ -44,7 +44,7 @@
       const ctl = (CB.L().control || {}).role;
       const banner = ctl === 'controlled'
         ? '<div class="notice warn ctl-on">' + icon('hand', 'sm') + '<span class="grow"><b>' + esc(CB.peerName()) + ' שולט בטלפון שלך</b><br>לוחץ, גולל וכותב כאן.</span><button type="button" class="btn small" data-action="control-stop">עצירה</button></div>'
-        : ctl === 'asked' || ctl === 'setup' ? '<div class="notice gray">' + icon('hand', 'sm') + '<span class="grow">' + esc(CB.peerName()) + ' מבקש לשלוט בטלפון</span><button type="button" class="btn small secondary" data-action="open-sheet" data-sheet="control">לבקשה</button></div>' : '';
+        : ctl === 'asked' || ctl === 'install' || ctl === 'setup' ? '<div class="notice gray">' + icon('hand', 'sm') + '<span class="grow">' + esc(CB.peerName()) + ' מבקש לשלוט בטלפון</span><button type="button" class="btn small secondary" data-action="open-sheet" data-sheet="control">לבקשה</button></div>' : '';
       return banner + '<div class="live-card"><div class="top-line"><span class="rec"></span><h2>המסך שלך אצל ' + esc(CB.peerName()) + '</h2></div>' +
         '<div class="stats" id="mstats">' + statsHtml(m) + '</div><p class="note" id="mnote">' + esc(AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '') + '</p>' +
         '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('stop') + 'עצירת השיתוף</button></div>' +

@@ -1,4 +1,4 @@
-package com.luachsport.chibarti;
+package com.luachsport.chibarti.control;
 
 import android.accessibilityservice.GestureDescription;
 import android.annotation.TargetApi;
