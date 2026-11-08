@@ -41,7 +41,11 @@
         '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('close') + 'ביטול</button></div>';
     }
     if (m.role === 'sending') {
-      return '<div class="live-card"><div class="top-line"><span class="rec"></span><h2>המסך שלך אצל ' + esc(CB.peerName()) + '</h2></div>' +
+      const ctl = (CB.L().control || {}).role;
+      const banner = ctl === 'controlled'
+        ? '<div class="notice warn ctl-on">' + icon('hand', 'sm') + '<span class="grow"><b>' + esc(CB.peerName()) + ' שולט בטלפון שלך</b><br>לוחץ, גולל וכותב כאן.</span><button type="button" class="btn small" data-action="control-stop">עצירה</button></div>'
+        : ctl === 'asked' || ctl === 'setup' ? '<div class="notice gray">' + icon('hand', 'sm') + '<span class="grow">' + esc(CB.peerName()) + ' מבקש לשלוט בטלפון</span><button type="button" class="btn small secondary" data-action="open-sheet" data-sheet="control">לבקשה</button></div>' : '';
+      return banner + '<div class="live-card"><div class="top-line"><span class="rec"></span><h2>המסך שלך אצל ' + esc(CB.peerName()) + '</h2></div>' +
         '<div class="stats" id="mstats">' + statsHtml(m) + '</div><p class="note" id="mnote">' + esc(AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '') + '</p>' +
         '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('stop') + 'עצירת השיתוף</button></div>' +
         '<p class="fine">אפשר לצאת מחיברתי ולהשתמש בטלפון כרגיל: הכל ממשיך להופיע אצל ' + esc(CB.peerName()) + '. לעצירה: כאן או מההתראה.</p>';
@@ -63,7 +67,7 @@
       if (m.error === 'capture') h += '<div class="notice warn">' + icon('alert', 'sm') + '<span class="grow">צילום המסך לא הצליח במכשיר הזה. נסו איכות נמוכה יותר.</span></div>';
       return h + (m.role === 'none' ? idle() : live(m));
     },
-    sig: () => { const m = CB.L().mirror || {}; return [CB.connected(), m.role, m.role === 'sending' ? m.state : '', m.error, CB.peerName(), CB.ui.env && CB.ui.env.audioCapture].join('|'); },
+    sig: () => { const m = CB.L().mirror || {}; return [CB.connected(), m.role, m.role === 'sending' ? m.state : '', m.error, CB.peerName(), CB.ui.env && CB.ui.env.audioCapture, (CB.L().control || {}).role].join('|'); },
     live: () => {
       const m = CB.L().mirror || {};
       if (m.role === 'sending') { CB.part('mstats', statsHtml(m)); CB.setText('mnote', (AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '')); }

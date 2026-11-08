@@ -26,6 +26,7 @@
     scan: { on: false, error: '', peers: [] },
     requests: [], transfers: [], offers: [], devices: [],
     mirror: { role: 'none', state: '', error: '' },
+    control: { role: 'none', error: '', service: false, can: true },
     textCount: 0
   });
   const S = { snap: base(), texts: [], history: [], env: null };

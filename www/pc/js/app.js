@@ -61,5 +61,5 @@
 
   PC.render();
   // A phone that remembers this computer: connect at once (no code, no approval on the phone).
-  if (PC.store.get('pair', '') && (PC.store.get('phone', null) || {}).name) PC.A.quick();
+  if (!PC.program && PC.store.get('pair', '') && (PC.store.get('phone', null) || {}).name) PC.A.quick();
 })();

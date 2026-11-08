@@ -49,6 +49,7 @@ public final class FakePhone {
             String rel = path.startsWith("fonts/") || "icon.png".equals(path) || "logo.svg".equals(path) ? path : "pc/" + path;
             return new FileInputStream(new File(www, rel));
         }, FakePhone::socket);
+        w.about = new JSONObject().put("app", "chibarti").put("v", 1).put("id", "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0").put("name", "Redmi Note 8").toString();
         w.start();
         log.println("READY " + w.httpPort + " " + w.httpsPort + " " + tls.fingerprint);
         Thread.sleep(Long.MAX_VALUE);
@@ -82,6 +83,15 @@ public final class FakePhone {
                 case "trusted":
                     if (!PAIR.equals(h.optString("key"))) { send(link, Proto.DENIED, new JSONObject().put("reason", "unknown")); link.close(); return; }
                     break;
+                case "claim": {
+                    // the test "scans" the program's QR code by writing its token to claim.txt
+                    File cf = new File(out, "claim.txt");
+                    String want = cf.isFile() ? new String(read(cf), "UTF-8").trim() : "";
+                    if (want.isEmpty() || !want.equals(h.optString("token"))) { send(link, Proto.DENIED, new JSONObject().put("reason", "unknown")); link.close(); return; }
+                    cf.delete();
+                    ok.put("pair", PAIR);
+                    break;
+                }
                 case "resume": case "stream":
                     if (!KEY.equals(h.optString("key"))) { send(link, Proto.DENIED, new JSONObject().put("reason", "unknown")); link.close(); return; }
                     send(link, Proto.APPROVED, new JSONObject().put("resumed", true));
@@ -163,6 +173,13 @@ public final class FakePhone {
                 if (r != null) r.close();
                 break;
             case Proto.KEY_REQUEST: keyWanted = true; log.println("KEY_REQUEST"); break;
+            case Proto.CONTROL_ASK:
+                log.println("CONTROL_ASK sharing=" + sharing);
+                send(l, Proto.CONTROL_REPLY, new JSONObject().put("accept", sharing).put("reason", sharing ? "" : "not-sharing"));
+                break;
+            case Proto.CONTROL_REPLY: log.println("CONTROL_REPLY " + o.optBoolean("accept") + " " + o.optString("reason")); break;
+            case Proto.CONTROL_STOP: log.println("CONTROL_STOP"); break;
+            case Proto.INPUT: log.println("INPUT " + o); break;
             case Proto.BYE: log.println("BYE " + o.optString("reason")); break;
             case Proto.CANCEL: log.println("CANCEL " + o.optString("reason")); break;
             default: log.println("MSG " + f.type);
@@ -179,6 +196,16 @@ public final class FakePhone {
             send(l, Proto.OFFER, new JSONObject().put("tid", 777).put("files", files).put("total", n).put("resume", false));
         } else if (t.equals("/share")) {
             send(l, Proto.MIRROR_OFFER, new JSONObject().put("quality", "standard").put("fps", 30).put("audio", false));
+        } else if (t.equals("/control")) {
+            send(l, Proto.CONTROL_ASK, new JSONObject());
+        } else if (t.equals("/inputs")) {
+            // what a phone sends while controlling a computer: a tap, a long press, a drag, a scroll, a key, text
+            send(l, Proto.INPUT, new JSONObject("{\"t\":\"g\",\"p\":[[0.25,0.5,80]]}"));
+            send(l, Proto.INPUT, new JSONObject("{\"t\":\"g\",\"p\":[[0.6,0.6,700]]}"));
+            send(l, Proto.INPUT, new JSONObject("{\"t\":\"g\",\"p\":[[0.1,0.1,0],[0.2,0.2,30],[0.3,0.3,60]]}"));
+            send(l, Proto.INPUT, new JSONObject("{\"t\":\"w\",\"x\":0.5,\"y\":0.5,\"dy\":0.2}"));
+            send(l, Proto.INPUT, new JSONObject("{\"t\":\"k\",\"k\":\"enter\"}"));
+            send(l, Proto.INPUT, new JSONObject("{\"t\":\"s\",\"s\":\"שלום\"}"));
         } else if (t.equals("/stop")) {
             sharing = false;
             send(l, Proto.MIRROR_STOP, new JSONObject());

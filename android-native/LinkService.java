@@ -24,7 +24,7 @@ import org.json.JSONObject;
  * files / show you its screen" alerts, and asks Android for screen capture in the right order (Android 14).
  */
 public class LinkService extends Service {
-    static final String START = "start", PROJECT = "project", STOP_MIRROR = "stop-mirror", DISCONNECT = "disconnect";
+    static final String START = "start", PROJECT = "project", STOP_MIRROR = "stop-mirror", DISCONNECT = "disconnect", STOP_CONTROL = "stop-control";
     private static final String CH_LINK = "link", CH_ALERT = "alerts";
     private static final int ID = 1, ID_ASK = 2, ID_OFFER = 3, ID_TEXT = 4;
     private static volatile LinkService me;
@@ -64,6 +64,8 @@ public class LinkService extends Service {
     static void ask(Context c, String name) { alert(c, ID_ASK, name + " רוצה להתחבר", "לחיצה לאישור או לסירוב"); }
 
     static void mirrorAsk(Context c, String name) { alert(c, ID_ASK, name + " רוצה להראות לך את המסך שלו", "לחיצה כדי לצפות"); }
+
+    static void controlAsk(Context c, String name) { alert(c, ID_ASK, name + " רוצה לשלוט בטלפון שלך", "לחיצה לאישור או לסירוב"); }
 
     static void askDone(Context c) { cancel(c, ID_ASK); }
 
@@ -134,7 +136,9 @@ public class LinkService extends Service {
         Session s = hub.session;
         String peer = s == null ? "" : s.peerName;
         String role = hub.mirror.role;
-        if ("sending".equals(role) || "offering".equals(role)) { title = "משתף את המסך עם " + peer; text = "לחיצה על \"עצירה\" מפסיקה מיד"; }
+        boolean controlled = "controlled".equals(hub.control.role);
+        if (controlled) { title = peer + " שולט בטלפון שלך"; text = "\"עצירת השליטה\" מפסיקה מיד"; }
+        else if ("sending".equals(role) || "offering".equals(role)) { title = "משתף את המסך עם " + peer; text = "לחיצה על \"עצירה\" מפסיקה מיד"; }
         else if ("viewing".equals(role)) title = "צופה במסך של " + peer;
         else if ("connected".equals(mode)) { title = pre("מחובר ל", peer); text = "אפשר לשלוח קבצים, הודעות ולשתף מסך"; }
         else if ("reconnecting".equals(mode)) title = "החיבור נקטע, מתחבר שוב…";
@@ -142,6 +146,7 @@ public class LinkService extends Service {
         else if ("hosting".equals(mode)) { title = "מחכה שהטלפון השני יתחבר"; text = "בלי אינטרנט, ישירות בין הטלפונים"; }
         else title = "חיברתי";
         Notification.Builder b = builder(this, CH_LINK).setContentTitle(title).setContentText(text).setOngoing(true).setOnlyAlertOnce(true);
+        if (controlled) b.addAction(new Notification.Action.Builder(0, "עצירת השליטה", action(STOP_CONTROL, 3)).build());
         if ("sending".equals(role) || "offering".equals(role)) b.addAction(new Notification.Action.Builder(0, "עצירת השיתוף", action(STOP_MIRROR, 1)).build());
         if (s != null) b.addAction(new Notification.Action.Builder(0, "ניתוק", action(DISCONNECT, 2)).build());
         return b.build();
@@ -154,7 +159,7 @@ public class LinkService extends Service {
         try {
             Hub hub = Hub.get(this);
             Session s = hub.session;
-            String key = hub.mode() + "|" + hub.mirror.role + "|" + (s == null ? "" : s.peerName);
+            String key = hub.mode() + "|" + hub.mirror.role + "|" + hub.control.role + "|" + (s == null ? "" : s.peerName);
             if (key.equals(shown)) return;
             shown = key;
             ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(ID, build());
@@ -212,6 +217,7 @@ public class LinkService extends Service {
         } else {
             foreground();
             if (STOP_MIRROR.equals(a)) Hub.get(this).mirror.stop(true);
+            else if (STOP_CONTROL.equals(a)) Hub.get(this).control.stop(true);
             else if (DISCONNECT.equals(a)) Hub.get(this).disconnect();
         }
         return START_NOT_STICKY;

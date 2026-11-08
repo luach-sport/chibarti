@@ -59,7 +59,7 @@
       if (!list.length) return h + '<div class="empty">' + CB.emptyArt() + '<h2>עוד אין מכשירים מוכרים</h2><p>אחרי החיבור הראשון, אם משאירים את "לזכור את המכשיר", הוא יופיע כאן.</p></div>';
       h += '<div class="card list">' + list.map((d) => {
         const now = link && link.peerId === d.id;
-        return '<div class="row"><span class="tile' + (now ? ' ok' : '') + '">' + icon(d.via === 'pc' ? 'monitor' : 'phone') + '</span><span class="grow"><span class="t">' + esc(d.name || (d.via === 'pc' ? 'מחשב' : 'טלפון')) + (now ? ' <span class="badge green">מחובר עכשיו</span>' : '') + '</span>' +
+        return '<div class="row"><span class="tile' + (now ? ' ok' : '') + '">' + icon(d.via === 'pc' || d.via === 'program' ? 'monitor' : 'phone') + '</span><span class="grow"><span class="t">' + esc(d.name || (d.via === 'pc' || d.via === 'program' ? 'מחשב' : 'טלפון')) + (now ? ' <span class="badge green">מחובר עכשיו</span>' : '') + '</span>' +
           '<span class="s">' + esc(d.model || '') + (d.last ? ' · חיבור אחרון: ' + esc(CB.ago(d.last)) : '') + (d.via ? ' · ' + esc(CB.viaLabel(d.via)) : '') + '</span></span>' +
           (now ? '<button type="button" class="btn small secondary" data-action="disconnect">ניתוק</button>' : '<button type="button" class="btn small secondary" data-action="forget" data-id="' + esc(d.id) + '" data-name="' + esc(d.name) + '">שכחה</button>') + '</div>';
       }).join('') + '</div>';

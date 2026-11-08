@@ -34,3 +34,8 @@
 .desk-shot img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid rgba(15, 26, 27, .08); box-shadow: var(--shadow); }
 .desk-shot figcaption { text-align: center; font-size: 13px; color: var(--muted, #536869); margin-top: 10px; }
 @media (max-width: 860px) { .desk-shot { order: 4; } }
+.pc-dl { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 14px; }
+.pc-dl span { font-size: 13px; color: var(--muted, #536869); }
+.pc-dl-btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 14px; background: #0A8F94; color: #fff !important; font-weight: 700; text-decoration: none; }
+.pc-dl-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pc-dl-btn:hover { background: #087A7E; }

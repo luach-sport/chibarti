@@ -148,6 +148,30 @@ await page.waitForTimeout(300);
 ok(await ev(() => window.__chibarti.CB.screenName() === 'home' && document.getElementById('link-card').textContent.includes('דפדפן במחשב')), 'connected to a computer');
 await noSideScroll('home with a computer');
 
+// ---------- the Windows program: scanning its QR code from "חיבור למחשב" ----------
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.tab = 'home'; K.render(); });
+await page.click('[data-action="pc"]');
+await page.waitForSelector('.pc-program');
+await ev(() => window.__chibarti.CB.joinWith('chibarti://pc?v=1&k=0123456789abcdef0123456789abcdef&n=' + encodeURIComponent('מחשב Windows')));
+await page.waitForTimeout(400);
+ok(await ev(() => window.__chibarti.CB.screenName() === 'pc' && document.getElementById('toast-root').textContent.includes('יתחבר')), 'program QR claimed');
+ok(await ev(() => { let t = ''; window.__chibarti.CB.toast = (m) => { t = m; }; window.__chibarti.CB.joinWith('chibarti://pc?v=1&k=bad'); return new Promise((r) => setTimeout(() => r(t), 200)); }) === 'הקוד הזה לא מתוכנת חיברתי', 'bad program QR refused');
+
+// ---------- remote control of this phone: the request, the one-time setting, the banner while controlled ----------
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.tab = 'cast';
+  K.sim.set({ mode: 'connected', link: { peerId: 'p1', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', since: Date.now(), quality: 'great' }, mirror: { role: 'sending', state: 'live', error: '', fps: 30, kbps: 2000, audio: 'none' } });
+  K.sim.set({ control: { role: 'asked', error: '', service: false, can: true } }); });
+await page.waitForTimeout(400);
+ok(await ev(() => window.__chibarti.CB.sheetIs('control') && document.querySelector('.sheet').textContent.includes('רוצה לשלוט בטלפון שלך')), 'control request sheet');
+await noSideScroll('control request');
+await ev(() => window.__chibarti.CB.sim.set({ control: { role: 'setup', error: '', service: false, can: true } }));
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('control') && document.querySelector('.sheet').textContent.includes('הגדרות הנגישות')), 'control setup guidance');
+await ev(() => window.__chibarti.CB.sim.set({ control: { role: 'controlled', error: '', service: true, can: true } }));
+await page.waitForTimeout(400);
+ok(await ev(() => !window.__chibarti.CB.sheetIs('control') && !!document.querySelector('.ctl-on [data-action="control-stop"]')), 'controlled banner with stop');
+await noSideScroll('controlled');
+
 await ev(() => { const K = window.__chibarti.CB; K.state.settings.theme = 'dark'; K.applyTheme(); });
 ok(await ev(() => document.documentElement.getAttribute('data-theme')) === 'dark', 'dark theme');
 

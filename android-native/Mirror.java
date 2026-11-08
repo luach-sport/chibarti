@@ -158,6 +158,7 @@ final class Mirror {
         Session s = session();
         if (s != null) s.dropStream();
         MirrorRx.end("viewing".equals(was) ? "stopped" : "");
+        hub.control.ended();
         LinkService.askDone(hub.ctx);
         LinkService.mirrorOff(hub.ctx);
         hub.changed();

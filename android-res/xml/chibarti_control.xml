@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Remote control: taps, swipes and typing on this phone, only while its owner allowed a connected device -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/control_desc"
+    android:summary="@string/control_summary"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:notificationTimeout="200"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true" />

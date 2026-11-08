@@ -12,6 +12,7 @@ export async function prepare(page, { info, base }) {
 }
 
 export const reset = () => {
+  if (!window.__chibarti) return; // the last scenes are the computer's own pages
   const K = window.__chibarti.CB;
   K.closeSheet();
   K.sim.reset();
@@ -36,8 +37,13 @@ const MEDIA = `K.ui.media = { items: [1, 2, 3, 4, 5, 6].map((i) => ({ uri: 'sim:
 const ENV = `K.sim.S.env = { sdk: 33, release: '13', model: 'Galaxy A54', p2p: true, camera: true, audioCapture: true, wifiOn: true, locationOn: true, locationNeeded: false,
   perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: '', folderName: '' };`;
 
+// This phone shares its screen with the computer (for the remote-control scenes)
+const SHARING_TO_PC = `K.sim.set({ mode: 'connected', host: { on: false }, devices: [],
+  link: { peerId: 'c1', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'program', kind: 'pc', host: true, since: Date.now() - 380000, rtt: 9, state: 'active', trusted: true, quality: 'great' },
+  mirror: { role: 'sending', state: 'live', error: '', width: 720, height: 1600, fps: 30, kbps: 3100, audio: 'none' } });`;
+
 const PC_LINK = `K.sim.set({ mode: 'connected', host: { on: false }, devices: [],
-  link: { peerId: 'c1', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'pc', kind: 'pc', host: true, since: Date.now() - 380000, rtt: 9, state: 'active', trusted: true, quality: 'great' } });`;
+  link: { peerId: 'c1', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'program', kind: 'pc', host: true, since: Date.now() - 380000, rtt: 9, state: 'active', trusted: true, quality: 'great' } });`;
 
 // The computer page itself (www/pc/), at computer size, connected to this phone and showing its screen. Last, because
 // it leaves the phone page. Its font and icon are shared with the app (on the phone they're served from the app's root).
@@ -66,8 +72,25 @@ async function pcPage(page, arg) {
     c.width = img.naturalWidth; c.height = img.naturalHeight;
     c.getContext('2d').drawImage(img, 0, 0);
     S.role = 'viewing'; S.state = 'live'; S.fps = 30;
+    PC.K.role = 'controlling';
     PC.render();
   }, arg.base + '/shots/home.jpg');
+}
+
+// The Windows program's first screen: the QR code to scan and the phone it found (its server is stood in for).
+async function pcProgram(page, arg) {
+  const app = arg.base + '/app/';
+  await page.addInitScript(() => {
+    window.PC_PROGRAM = { token: 'site', version: '1.1' };
+    const real = window.fetch;
+    window.fetch = (u, o) => (String(u).indexOf('/api/') === 0
+      ? Promise.resolve(new Response(String(u) === '/api/phones' ? JSON.stringify([{ id: 'a1b2c3d4e5f60718293a4b5c6d7e8f90', name: 'Galaxy A54', ip: '192.168.1.23', port: 8443, known: false }]) : '{}', { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      : real(u, o));
+  });
+  await page.goto(app + 'pc/index.html');
+  await page.addScriptTag({ url: app + 'vendor/qrcode.js' });
+  await page.waitForTimeout(2600);
+  await page.evaluate(() => { window.PC.redraw('pair'); });
 }
 
 const scene = (name, body, extra) => Object.assign({ name, set: new Function('arg', 'const K = window.__chibarti.CB, ui = K.ui; ' + body) }, extra || {});
@@ -93,6 +116,9 @@ export const SCENES = [
     K.sim.set({ textCount: 4 }); ui.tab = 'text'; K.render();`),
   scene('settings', CONNECTED + ENV + " ui.tab = 'settings'; K.render();", { wait: 800 }),
   scene('pc', ENV + " K.A.pc();", { wait: 900 }),
+  scene('control-ask', SHARING_TO_PC + " K.sim.set({ control: { role: 'asked', error: '', service: false, can: true } });", { wait: 900 }),
+  scene('control-setup', SHARING_TO_PC + " K.sim.set({ control: { role: 'setup', error: '', service: false, can: true } });", { wait: 900 }),
+  scene('controlled', SHARING_TO_PC + " K.sim.set({ control: { role: 'controlled', error: '', service: true, can: true } }); ui.tab = 'cast'; K.render();", { wait: 700 }),
   scene('pc-approve', ENV + " K.A.pc().then(() => K.sim.set({ requests: [{ rid: 'r2', name: 'מחשב Windows', model: 'Windows · Chrome', via: 'pc', kind: 'pc', at: Date.now() }] }));", { wait: 1100 }),
   scene('pc-home', PC_LINK + " K.render();"),
   scene('setup', ENV + " K.pushView({ name: 'setup' });", { wait: 800 }),
@@ -105,5 +131,6 @@ export const SCENES = [
     K.VERSION.build = String(b - 1 > 0 ? b - 1 : b);
     K.update.info = { version: arg.info.version || '1.0', build: b, notes: (arg.info.notes || []).slice(0, 4), inApp: true };
     K.openSheet('update');`, { wait: 700 }),
-  { name: 'pc-page', run: pcPage, wait: 600 }
+  { name: 'pc-page', run: pcPage, wait: 600 },
+  { name: 'pc-program', run: pcProgram, wait: 600 }
 ];

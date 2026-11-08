@@ -20,3 +20,11 @@
 .pc-fp { text-align: center; }
 .link-card .mores { display: flex; flex-wrap: wrap; justify-content: center; }
 .duo .stand { stroke: #FFFFFF; stroke-width: 4; stroke-linecap: round; fill: none; }
+/* "Have the program?" — the short way */
+.pc-program { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border-radius: 18px; border: 1.5px solid var(--primary); background: var(--primary-soft); color: var(--ink); text-align: right; font: inherit; cursor: pointer; }
+.pc-program > svg:first-child { width: 28px; height: 28px; color: var(--primary-text); flex-shrink: 0; }
+.pc-program b { display: block; font-size: 15px; }
+.pc-program .grow > span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.pc-program > svg:last-child { color: var(--primary-text); }
+.pc-or { margin: 4px 0 -4px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.pc-ready { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; font-size: 12.5px; color: rgba(255, 255, 255, .85); }

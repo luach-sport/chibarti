@@ -29,21 +29,24 @@
   ].map((f) => '<li>' + PC.icon(f[0]) + '<div><b>' + f[1] + '</b><span>' + f[2] + '</span></div></li>').join('');
 
   PC.part('pair', () => {
+    const prog = PC.programPair ? PC.programPair(ERR) : null;
+    if (prog) return prog;
     const busy = L.state === 'pairing';
     const phone = PC.store.get('phone', null) || {};
-    const quick = remembered() && !P.useCode;
+    const quick = remembered() && !P.useCode && !PC.program;
     let form;
     if (quick) {
       form = '<p class="lead">המחשב הזה זוכר את הטלפון. מתחברים בלי קוד (הטלפון צריך להיות על המסך "חיבור למחשב").</p>' +
         '<button class="btn primary big" data-act="quick"' + (busy ? ' disabled' : '') + '>' + (busy ? '<i class="spin"></i>מתחבר…' : PC.icon('link') + PC.esc(PC.pre('התחברות ל', phone.name))) + '</button>' +
         '<button class="btn link" data-act="use-code"' + (busy ? ' disabled' : '') + '>להתחבר עם קוד</button>';
     } else {
-      form = '<ol class="steps"><li>בטלפון פותחים את <b>חיברתי</b> ולוחצים <b>חיבור למחשב</b></li><li>מקלידים כאן את הקוד שמופיע בטלפון</li></ol>' +
+      form = (PC.program ? '<button class="btn link" data-act="prog-back">← חזרה לסריקה</button>' : '') +
+        '<ol class="steps"><li>' + (P.codeFor ? PC.esc(PC.pre('ב', P.codeFor)) : 'בטלפון') + ' פותחים את <b>חיברתי</b> ולוחצים <b>חיבור למחשב</b></li><li>מקלידים כאן את הקוד שמופיע בטלפון</li></ol>' +
         '<form id="pinForm" class="pin-form" autocomplete="off">' +
         '<input id="pin" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="7" placeholder="••••••" aria-label="הקוד מהטלפון" dir="ltr"' + (busy ? ' disabled' : '') + '>' +
         '<label class="check"><input id="remember" type="checkbox"' + (busy ? ' disabled' : '') + '><span>לזכור את המחשב הזה (בפעם הבאה בלי קוד)</span></label>' +
         '<button class="btn primary big" type="submit"' + (busy ? ' disabled' : '') + '>' + (busy ? '<i class="spin"></i>מחכים לאישור בטלפון…' : PC.icon('link') + 'התחברות') + '</button>' +
-        '</form>' + (remembered() ? '<button class="btn link" data-act="use-quick">' + PC.esc(PC.pre('חזרה להתחברות מהירה ל', phone.name)) + '</button>' : '');
+        '</form>' + (remembered() && !PC.program ? '<button class="btn link" data-act="use-quick">' + PC.esc(PC.pre('חזרה להתחברות מהירה ל', phone.name)) + '</button>' : '');
     }
     const note = busy ? '<p class="note">בטלפון יופיע שהמחשב רוצה להתחבר. לוחצים <b>אישור</b>.</p>' : L.error && ERR[L.error] ? '<p class="err" role="alert">' + PC.icon('alert', 'sm') + ERR[L.error] + '</p>' : '';
     return '<div class="pair-card">' +

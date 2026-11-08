@@ -60,7 +60,7 @@
     html: () => head('סריקת קוד') +
       '<div class="scan-stage" id="scan-stage"><div class="sq"><video id="scan-video" muted playsinline></video>' +
       '<div class="frame"><span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span></div>' +
-      '<div class="msg" id="scan-msg">מכוונים אל הקוד שעל הטלפון השני</div>' +
+      '<div class="msg" id="scan-msg">' + ((CB.view() || {}).pc ? 'מכוונים אל הקוד שבתוכנת חיברתי במחשב' : 'מכוונים אל הקוד שעל הטלפון השני') + '</div>' +
       '<div class="cover" id="scan-cover"><span class="spin" style="width:34px;height:34px;border-radius:17px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .9s linear infinite"></span>פותח מצלמה…</div></div></div>' +
       '<div class="card list">' + CB.navRow('nearby', 'radar', 'אין מצלמה או שהיא לא קוראת?', 'חיפוש טלפונים בסביבה והקלדת 6 הספרות') + '</div>' +
       '<p class="fine" style="text-align:center">הקוד נקרא בתוך הטלפון. שום תמונה לא נשמרת ולא נשלחת.</p>',

@@ -5,7 +5,7 @@
   const { esc, icon } = CB;
   const V = CB.views;
 
-  const VIA = { 'wifi-direct': 'Wi-Fi Direct', wifi: 'אותו Wi-Fi', hotspot: 'נקודה חמה', pc: 'דפדפן במחשב' };
+  const VIA = { 'wifi-direct': 'Wi-Fi Direct', wifi: 'אותו Wi-Fi', hotspot: 'נקודה חמה', pc: 'דפדפן במחשב', program: 'תוכנת חיברתי' };
   CB.viaLabel = (v) => VIA[v] || 'Wi-Fi';
 
   // Two phones (or this phone and a computer); "on" = connected (a solid line with data flowing), otherwise waves.
@@ -34,7 +34,7 @@
       const re = mode === 'reconnecting', pc = l.kind === 'pc';
       return duo(!re, pc) +
         '<h2 class="t">' + esc(CB.pre(re ? 'מתחבר שוב ל' : 'מחובר ל', l.name || (pc ? 'מחשב' : 'טלפון'))) + '</h2>' +
-        '<p class="s" id="lc-sub">' + (re ? 'החיבור נקטע לרגע. ההעברות ימשיכו מאותה נקודה.' : pc ? 'קבצים, מסך והודעות, ישירות מהדפדפן במחשב' : esc(l.model || '')) + '</p>' +
+        '<p class="s" id="lc-sub">' + (re ? 'החיבור נקטע לרגע. ההעברות ימשיכו מאותה נקודה.' : pc ? 'קבצים, מסך, שליטה והודעות עם המחשב' : esc(l.model || '')) + '</p>' +
         '<div class="chips"><span class="hchip">' + icon(pc ? 'monitor' : l.via === 'wifi-direct' ? 'phones' : 'wifi', 'xs') + esc(CB.viaLabel(l.via)) + '</span>' +
         '<span class="hchip" id="lc-q">' + bars(l.quality) + esc(Q_LABEL[l.quality] || 'בודק קליטה…') + '</span>' +
         '<span class="hchip num" id="lc-since">' + icon('clock', 'xs') + CB.duration(Date.now() - (l.since || Date.now())) + '</span>' +
@@ -67,7 +67,8 @@
       '<div class="acts"><button type="button" class="hbtn" data-action="host">' + icon('qr') + 'התחלת חיבור</button>' +
       '<button type="button" class="hbtn ghost" data-action="scan">' + icon('scan') + 'סריקת קוד</button></div>' +
       '<div class="mores"><button type="button" class="more" data-action="nearby">' + icon('radar', 'xs') + 'אין מצלמה? חיפוש בסביבה</button>' +
-      '<button type="button" class="more" data-action="pc">' + icon('monitor', 'xs') + 'חיבור למחשב</button></div>';
+      '<button type="button" class="more" data-action="pc">' + icon('monitor', 'xs') + 'חיבור למחשב</button></div>' +
+      (L.host && L.host.pcReady ? '<p class="pc-ready">' + icon('monitor', 'xs') + 'המחשב שלך יכול להתחבר עכשיו מתוכנת חיברתי</p>' : '');
   }
 
   function quick() {
@@ -107,7 +108,7 @@
     sig: () => {
       const L = CB.L();
       const t = (L.transfers || []).filter((x) => ['asking', 'sending', 'receiving', 'paused', 'interrupted'].indexOf(x.state) >= 0).map((x) => x.tid + x.state).join(',');
-      return [L.mode, CB.ui.hostFor, L.join && L.join.step, L.join && L.join.error, L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
+      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, L.join && L.join.step, L.join && L.join.error, L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
     },
     live: () => {
       const L = CB.L(), l = L.link;

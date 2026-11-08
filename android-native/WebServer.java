@@ -26,6 +26,8 @@ final class WebServer {
     static final int HTTP = 8080, HTTPS = 8443;
     private volatile ServerSocket plain, secure;
     volatile int httpPort = 0, httpsPort = 0;
+    /** Who this phone is, for the חיברתי program on a computer that looks for it (GET /id on the HTTPS port). */
+    volatile String about = "{}";
     private final Tls tls;
     private final Assets assets;
     private final Gate gate;
@@ -118,6 +120,14 @@ final class WebServer {
                 WsLink link = new WsLink(c, in);
                 link.remoteIp = c.getInetAddress() == null ? "" : c.getInetAddress().getHostAddress();
                 gate.socket(link);
+                return;
+            }
+            if ("/id".equals(path)) {
+                byte[] b = about.getBytes(Proto.UTF8);
+                head(out, 200, "application/json; charset=utf-8", b.length);
+                out.write(b);
+                out.flush();
+                c.close();
                 return;
             }
             serve(out, r.method, path);

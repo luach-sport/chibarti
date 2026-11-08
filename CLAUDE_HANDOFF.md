@@ -61,6 +61,31 @@ Limits: TLS is self-signed (one browser warning; the phone shows its fingerprint
 attacker who can intercept the computer's first connection and whom the user lets through the warning could relay it —
 the phone's approval with the computer's name is the last check.
 
+Remote control (v1.2): `CONTROL_ASK` 35 / `CONTROL_REPLY` 36 / `CONTROL_STOP` 37 / `INPUT` 38. The watcher asks; the
+sharer answers in a sheet (`www/js/sheets/control.js`); if `ControlService` (AccessibilityService, canPerformGestures,
+canRetrieveWindowContent) isn't on, Settings opens and `Control.onServiceReady` sends the answer when it comes on.
+INPUT JSON: `g` stroke `[[x,y,ms],…]` (fractions of the shared screen; sent when the finger/mouse lifts and replayed with
+its timing, ≤4 s), `w` scroll (`dy` fraction of the height), `k` key (back/home/recents/notifications/backspace/enter;
+PC: esc/win/enter/backspace/tab), `s` text (inserted at the cursor of the focused field with ACTION_SET_TEXT).
+Gestures need API 24; a phone on Android 6 answers `old`. Control ends with screen sharing (Mirror.stop → Control.ended).
+A computer can be controlled only from the program (browser answers `browser`; a window instead of the whole screen
+answers `not-screen`); the page forwards INPUT to the program (`/api/input`, only while `/api/control` is on).
+
+Windows program (`pc-app/`, Go, no dependencies, `-H windowsgui`): listens on 127.0.0.1:47823 only (fixed so the
+window's localStorage keeps the pair key; a second start asks the first to open a window and exits). Serves the
+embedded `www/pc` (index gets `window.PC_PROGRAM` = token + the QR script). Host header and Origin checked, a 48-hex
+token on every API call and on `/ws`, so other sites/processes can't drive it. Finds phones by `GET https://ip:8443/id`
+on the /24 of each private interface, 192.168.49.1 and last known addresses (outgoing only, no firewall prompt; the
+phone's web server answers `/id` whenever it offers a connection or the app is open with a remembered program —
+`Connect.pcReady`). `/ws?ip&port&id` relays messages unchanged to the phone's wss, pinning the phone's certificate
+SHA-256 after the first approved pairing (`pin`/`claim`); `trusted`/`resume`/`stream` must match (else DENIED
+`changed`). First pairing without typing: the window shows `chibarti://pc?v=1&k=<32 hex>&n=<name>`; the phone scans it
+(`CB.claimPc` → `Connect.claim`), and the program's next `claim` HELLO with that token is approved without asking and
+remembered. Window: Edge `--app` with its own profile in %LocalAppData%\Chibarti\window (Chrome or the default browser
+if Edge is missing). Exits 15 s after the window's heartbeat stops. Data: %AppData%\Chibarti (phones.json, chibarti.log).
+Not done: installer/shortcuts (portable exe), code signing (SmartScreen asks once), multi-monitor control (main screen
+only), UAC/elevated windows can't be controlled (Windows blocks it), macOS/Linux builds.
+
 ## Implemented
 Everything listed in README "מה יש באפליקציה": QR + PIN pairing with expiry and brute-force renewal, approval, trusted
 devices with per-device keys, nearby discovery (Wi-Fi Direct DNS-SD + LAN beacons), three network paths, auto-reconnect

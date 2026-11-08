@@ -25,6 +25,24 @@
     if (CB.screenName() !== 'pc') { if (CB.screenName() === 'host') ui.stack.pop(); CB.pushView({ name: 'pc' }); }
   };
 
+  // The program on a computer shows a QR code: scanning it here is the approval, and the program connects by itself
+  A['pc-scan'] = async () => {
+    CB.haptic();
+    if (!(await CB.ensureNetwork('pc'))) return;
+    CB.pushView({ name: 'scan', pc: true });
+  };
+  CB.claimPc = async (text) => {
+    const q = {};
+    String(text).replace(/^chibarti:\/\/pc\?/, '').split('&').forEach((kv) => { const i = kv.indexOf('='); if (i > 0) { try { q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* skip */ } } });
+    if (!/^[0-9a-f]{32}$/.test(q.k || '')) { CB.toast('הקוד הזה לא מתוכנת חיברתי'); return; }
+    ui.hostFor = 'pc';
+    if (CB.L().mode !== 'hosting') await CB.N.call('host');
+    await CB.N.call('claim', { token: q.k, name: q.n || '' });
+    ui.stack = [{ name: 'pc' }];
+    CB.render();
+    CB.toast('נסרק. ' + CB.pre('', q.n || 'המחשב') + ' יתחבר עכשיו לבד');
+  };
+
   A.scan = async () => {
     CB.haptic();
     if (!(await CB.ensureNetwork('join'))) return;
@@ -43,6 +61,7 @@
 
   /** A QR code (camera or a chibarti:// link): start joining and show the progress on Home. */
   CB.joinWith = async (text) => {
+    if (/^chibarti:\/\/pc\?/.test(String(text))) { CB.claimPc(text); return; }
     const r = await CB.N.call('join', { qr: text }).catch(() => ({ error: 'unreachable' }));
     if (r && r.error) {
       const msg = CB.joinError(r.error);

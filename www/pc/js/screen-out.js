@@ -26,7 +26,7 @@
       media = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: fps, max: fps }, width: { max: q.w }, height: { max: q.h } },
         audio: PC.shareOpts.audio ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false } : false,
-        systemAudio: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'include'
+        systemAudio: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'include', monitorTypeSurfaces: 'include'
       });
     } catch (e) {
       media = null;
@@ -318,9 +318,15 @@
   };
 
   /** Stops sharing or watching, in either direction (tell = let the phone know). */
+  /** The whole screen is shared (not a window or a tab), so places on it match the real screen. */
+  PC.sharingWholeScreen = () => {
+    try { const s = vtrack && vtrack.getSettings(); return !!s && (s.displaySurface === 'monitor' || (!s.displaySurface && !!window.PC_PROGRAM)); } catch (e) { return false; }
+  };
+
   PC.stopMirror = (tell) => {
     const was = S.role;
     if (was === 'none') return;
+    PC.controlEnded();
     if (tell) PC.send(T.MIRROR_STOP, {});
     S.role = 'none';
     S.state = '';

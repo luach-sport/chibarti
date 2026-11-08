@@ -37,6 +37,7 @@ public class ViewerActivity extends Activity implements MirrorRx.Viewer, Surface
     private long lastKeyAsk = 0;
     private int lastFrames = 0;
     private boolean closing = false;
+    private ViewerControl control;
 
     private int dp(float v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
 
@@ -75,11 +76,14 @@ public class ViewerActivity extends Activity implements MirrorRx.Viewer, Surface
         texts.addView(title);
         texts.addView(stats);
         bar.addView(texts, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView ctl = button("☝", "שליטה", v -> { control.toggle(); showBar(); });
+        bar.addView(ctl);
         bar.addView(button("⟳", "סיבוב", v -> rotate()));
         bar.addView(button("✕", "סגירה", v -> close()));
         root.addView(bar, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
 
         root.setOnClickListener(v -> showBar());
+        control = new ViewerControl(this, root, sv, ctl, this::showBar);
         root.addOnLayoutChangeListener((v, l, t, r, btm, ol, ot, or, ob) -> fit());
         setContentView(root);
         immersive();
@@ -220,6 +224,8 @@ public class ViewerActivity extends Activity implements MirrorRx.Viewer, Surface
     }
 
     @Override public void onEnded(String why) { ui.post(() -> { closing = true; finish(); }); }
+
+    @Override public void onControl(String role, String error) { ui.post(() -> { if (control != null) control.onControl(role, error); }); }
 
     // ---------- the surface ----------
     @Override public void surfaceCreated(SurfaceHolder h) { surface = h.getSurface(); startDecoder(); }

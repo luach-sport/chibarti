@@ -38,3 +38,5 @@ body.dragging.connected::after {
 .got li > svg { color: var(--primary-text); }
 .got .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .got .sz { color: var(--muted); font-size: 12.5px; display: inline-flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.job-meta { flex-wrap: wrap; row-gap: 2px; }
+.job-meta [data-live="meta"] { white-space: nowrap; }

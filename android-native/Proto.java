@@ -14,6 +14,8 @@ final class Proto {
     static final int TEXT = 10;
     static final int OFFER = 20, OFFER_REPLY = 21, CHUNK = 22, FILE_END = 23, FILE_ACK = 24, CANCEL = 25, PAUSE = 26, RESUME = 27;
     static final int MIRROR_OFFER = 30, MIRROR_REPLY = 31, MIRROR_STOP = 32, KEY_REQUEST = 33, MIRROR_STATS = 34;
+    // remote control: the one watching asks, the one sharing allows (and turns on the accessibility service once)
+    static final int CONTROL_ASK = 35, CONTROL_REPLY = 36, CONTROL_STOP = 37, INPUT = 38;
     // stream connection (binary body)
     static final int VIDEO_CONFIG = 40, VIDEO_FRAME = 41, AUDIO_CONFIG = 42, AUDIO_FRAME = 43;
     // a computer's sound comes as Opus (what browsers encode); same layout as AUDIO_CONFIG, csd = the OpusHead

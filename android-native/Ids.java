@@ -77,6 +77,14 @@ final class Ids {
         } catch (Exception ignored) { }
     }
 
+    /** A computer was remembered (it may connect by itself while the app is open on the same Wi-Fi). */
+    synchronized boolean hasComputer() {
+        JSONObject all = trusted();
+        Iterator<String> it = all.keys();
+        while (it.hasNext()) { JSONObject t = all.optJSONObject(it.next()); if (t != null && ("pc".equals(t.optString("via")) || "program".equals(t.optString("via")))) return true; }
+        return false;
+    }
+
     synchronized void forget(String id) {
         JSONObject all = trusted();
         all.remove(id);

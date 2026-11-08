@@ -5,9 +5,11 @@
 | Suite | Command | What it covers | Status when v1.0 was built |
 |---|---|---|---|
 | Protocol (plain Java) | `bash tests/java/run.sh` | base64url, HKDF (RFC 5869 vector), QR handshake over a real TCP socket, wrong 6-digit code refused and counted, expired secret refused, wrong host id refused, tampered frame detected, replayed frame detected, code expiry after 10 min and renewal after 5 wrong tries, QR payload parse/validation (version, prefix, port, address, token, password, method, expiry), safe file names, 3 MB + empty file with SHA-256, corrupted chunk → file deleted, out-of-order / oversized chunks refused, cancel deletes partial file, resume after a dropped link, chunks over the real encrypted socket, automatic bitrate down/up, video config packet; for the computer: WebSocket accept key (RFC 6455), the phone's certificate kept and valid, a masked fragmented WebSocket message both ways over TLS with one clean close | 22/22 passed locally; also runs in every CI build |
-| Screens (Playwright, 320×640) | `node tests/app.test.mjs` (with `www/` served on :8765) | Hebrew sizes/times, Hebrew prefix before Latin names, file kinds, QR drawn and read back by jsQR, host page, approval sheet opens/closes by itself, nearby list, keypad, connected card, progress updated in place (no redraw), photo grid toggle, offer sheet with APK warning, messages keep the draft, no sideways scrolling on every tab/page/sheet, dark theme, no page errors | 37/37 passed locally (incl. the "חיבור למחשב" page, its approval and the connected home) |
+| Screens (Playwright, 320×640) | `node tests/app.test.mjs` (with `www/` served on :8765) | Hebrew sizes/times, Hebrew prefix before Latin names, file kinds, QR drawn and read back by jsQR, host page, approval sheet opens/closes by itself, nearby list, keypad, connected card, progress updated in place (no redraw), photo grid toggle, offer sheet with APK warning, messages keep the draft, no sideways scrolling on every tab/page/sheet, dark theme, no page errors | 44/44 passed locally (incl. "חיבור למחשב", the program's QR, remote-control request / setup / controlled banner) |
 | Java compile check | `javac` against `android.jar` API 34 + Capacitor stubs | every class in `android-native/` compiles | passed locally; the real Gradle build runs in CI |
-| Computer page (Playwright, 1366×820) | `node tests/pc.test.mjs` | the page in `www/pc/` against `tests/java/FakePhone.java`, which runs the app's real `WebServer` + `Tls` + `WsLink`: port 8080 explanation, HTTPS + secure context, wrong / right code, messages with links, 3 MB to the phone (SHA-256 checked), 2.5 MB from the phone (download checked byte by byte), the phone's H.264 picture decoded and drawn, this screen + sound encoded (H.264 + Opus) and the recording verified by ffprobe, dropped link resumed, remembered computer, phone leaving, narrow window | 14/14 passed for v1.1 |
+| Computer page (Playwright, 1366×820) | `node tests/pc.test.mjs` | the page in `www/pc/` against `tests/java/FakePhone.java`, which runs the app's real `WebServer` + `Tls` + `WsLink`: port 8080 explanation, HTTPS + secure context, wrong / right code, messages with links, 3 MB to the phone (SHA-256 checked), 2.5 MB from the phone (download checked byte by byte), the phone's H.264 picture decoded and drawn, this screen + sound encoded (H.264 + Opus) and the recording verified by ffprobe, dropped link resumed, remembered computer, phone leaving, narrow window | 15/15 passed (v1.2 adds controlling the phone: tap, drag, wheel, typing, Enter, right click = back, home) |
+| Windows program, unit (Go) | `cd pc-app && go test ./...` | WebSocket both ways (1 B – 3 MB messages, RFC accept key), the built-in page with the token, other host names refused, input refused while control is off, tap / long press / drag / scroll / keys / Hebrew + emoji typing turned into mouse and keyboard actions, only private network addresses | passes locally and in every CI build |
+| Windows program with its window (Playwright) | `node tests/program.test.mjs` | the program built for Linux against `FakePhone`: no token / wrong token / other host name / other origin on the relay refused, QR shown, phone found on the network, phone "scans" → connected with no code and no approval, certificate remembered, messages and files through the relay, phone controls the computer only after "לאפשר" (actions logged instead of moved), connects by itself next time, a phone with another certificate is refused | 8/8 passed for v1.2 |
 | Site screenshots | Itzko kit `build.mjs` | all scenes render without app errors (incl. the computer page at 1280×760) | passed locally |
 
 Nothing that needs radio hardware (Wi-Fi Direct, hotspot, MediaProjection, MediaCodec, AudioPlaybackCapture,
@@ -90,6 +92,21 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] Turn the phone's Wi-Fi off/on for a few seconds → the page shows "מתחבר שוב" and continues; a transfer resumes.
 - [ ] Reload the page with "לזכור" on → connects without a code (the phone on "חיבור למחשב").
 - [ ] After an in-app update, the computer page served is the updated one.
+
+### Windows program (a Windows 10/11 computer + a phone)
+- [ ] Download chibarti-pc.exe from the site; SmartScreen: "More info" → "Run anyway". A window opens (Edge app window, no address bar) with a QR code.
+- [ ] Phone: "חיבור למחשב" → "יש לך את תוכנת חיברתי במחשב?" → scan. Same Wi-Fi: connects within a few seconds, no approval tap.
+- [ ] No firewall question appears. Close the window → the program exits within ~15 s (Task Manager).
+- [ ] Next day: open the program, open חיברתי on the phone (no button) → connects by itself (same Wi-Fi).
+- [ ] No shared Wi-Fi: connect the computer to the phone's DIRECT-… network → the program finds 192.168.49.1.
+- [ ] Reinstall the app on the phone → the program says the phone looks different; scanning again fixes it.
+
+### Remote control
+- [ ] Phone A shares, phone B watches → B taps ☝ "שליטה" → A asks; first time A opens Accessibility settings → turn on "חיברתי – שליטה מרחוק" → back → B can tap, swipe, long-press, use ◁ ○ ▢, type with ⌨ (Hebrew too).
+- [ ] Android 13+ on A: if the switch is grey, App info → ⋮ → "Allow restricted settings".
+- [ ] Computer watches a phone → "שליטה" → mouse click / drag / wheel / right click (back) / typing on the keyboard.
+- [ ] Phone watches the computer (program, whole screen shared) → "שליטה" → the computer asks "לאפשר" → taps click, long press right-clicks, drag drags, ⌨ types, Esc / ⊞ / ↵ / ⌫ keys work. With a window shared instead of the whole screen, the phone is told to share the whole screen.
+- [ ] Stop from either side, from the notification, or by ending screen sharing → control ends; inputs no longer arrive.
 
 ## 3. Android versions to cover if possible
 Android 6.0 (API 23, the minimum), 8.x (local hotspot appears), 9 (last legacy Wi-Fi join), 10 (P2P join from QR,

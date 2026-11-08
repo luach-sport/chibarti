@@ -27,9 +27,10 @@ final class Hub implements Session.Listener {
     final Connect connect;
     final Transfers transfers;
     final Mirror mirror;
+    final Control control;
     volatile Session session;
     private volatile Out out;
-    private final Handler h = new Handler(Looper.getMainLooper());
+    final Handler h = new Handler(Looper.getMainLooper());
     private boolean emitQueued = false;
     private long lastEmit = 0;
 
@@ -40,6 +41,7 @@ final class Hub implements Session.Listener {
         connect = new Connect(this);
         transfers = new Transfers(this);
         mirror = new Mirror(this);
+        control = new Control(this);
     }
 
     void setOut(Out o) { out = o; }
@@ -88,6 +90,7 @@ final class Hub implements Session.Listener {
             s.put("transfers", transfers.describe());
             s.put("offers", transfers.offers());
             s.put("mirror", mirror.describe());
+            s.put("control", control.describe());
             s.put("devices", ids.list());
             s.put("textCount", history.texts().length());
         } catch (Exception ignored) { }
@@ -145,6 +148,8 @@ final class Hub implements Session.Listener {
                     transfers.onControl(f.type, o); break;
                 case Proto.MIRROR_OFFER: case Proto.MIRROR_REPLY: case Proto.MIRROR_STOP: case Proto.KEY_REQUEST: case Proto.MIRROR_STATS:
                     mirror.onControl(f.type, o); break;
+                case Proto.CONTROL_ASK: case Proto.CONTROL_REPLY: case Proto.CONTROL_STOP: case Proto.INPUT:
+                    control.onMessage(f.type, o); break;
                 default: break;
             }
         } catch (Exception e) {

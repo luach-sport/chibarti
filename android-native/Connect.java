@@ -44,6 +44,12 @@ final class Connect implements Server.Gate, WifiDirect.Events {
 
     // hosting
     volatile boolean hosting = false, hostReady = false;
+    // a remembered computer may connect while the app is open on a shared Wi-Fi (no code, no group), and
+    // a computer whose QR code this phone scanned may connect once without asking (the scan was the approval)
+    volatile boolean pcReady = false;
+    private volatile String claimToken, claimName;
+    private volatile long claimUntil;
+    private static final int MODE_CLAIM = 99;
     private volatile Pairing pairing;
     private String method = "l", ssid, pass, hostError;
     private List<String> addresses;
@@ -168,13 +174,39 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         if (!keepNet) teardownHostNet();
         hub.changed();
         if (hub.session == null && !joiner.busy()) LinkService.stop(ctx);
+        if (pcReady && hub.session == null) startPcReady();
     }
+
+    /** The app is open (on) or not (off): a remembered computer on the same Wi-Fi can connect by itself meanwhile. */
+    void pcReady(boolean on) {
+        pcReady = on;
+        if (on) { if (!hosting && hub.session == null) startPcReady(); }
+        else if (!hosting && hub.session == null && web != null) web.stop();
+    }
+
+    private void startPcReady() {
+        if (hosting || hub.session != null || !hub.ids.hasComputer() || NetUtil.addresses().isEmpty()) return;
+        startWeb();
+    }
+
+    /** A QR code from the program on a computer was scanned here: that computer may connect once, without asking. */
+    void claim(String token, String name) {
+        if (token == null || !token.matches("[0-9a-f]{32}")) return;
+        claimToken = token;
+        claimName = name == null ? "" : QrPayload.clean(name, 40);
+        claimUntil = System.currentTimeMillis() + 10 * 60 * 1000L;
+        hub.changed();
+    }
+
+    boolean claimWaiting() { return claimToken != null && System.currentTimeMillis() < claimUntil; }
 
     /** The web server for a computer's browser (HTTPS + WebSocket), running whenever this phone offers a connection. */
     private void startWeb() {
         try {
             if (tls == null) tls = Tls.load(new java.io.File(ctx.getFilesDir(), "tls"));
             if (web == null) web = new WebServer(tls, this::asset, this::pcAccepted);
+            // what the חיברתי program on a computer reads when it looks for this phone on the network
+            web.about = new JSONObject().put("app", "chibarti").put("v", 1).put("id", hub.ids.myId()).put("name", hub.ids.myName()).toString();
             web.start();
         } catch (Exception e) { android.util.Log.w("Chibarti", "web server", e); }
     }
@@ -225,6 +257,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 if (addresses != null) for (String a : addresses) ips.put(a);
                 host.put("addresses", ips);
             }
+            host.put("pcReady", pcReady && !hosting && web != null && web.running()).put("claim", claimWaiting());
             WebServer w = web;
             if (w != null && w.running()) host.put("web", new JSONObject().put("http", w.httpPort).put("https", w.httpsPort).put("fp", tls == null ? "" : tls.fingerprint));
             JSONArray req = new JSONArray();
@@ -319,8 +352,15 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             if ("trusted".equals(mode)) {
                 byte[] k = hub.ids.trustedKey(id);
                 if (k == null || !Crypto.same(k, key)) { deny(link, "unknown"); return; }
-                if (!hosting) { deny(link, hub.session != null ? "busy" : "not-offering"); return; }
+                if (!hosting && !pcReady) { deny(link, hub.session != null ? "busy" : "not-offering"); return; }
                 m = Handshake.MODE_TRUSTED;
+            } else if ("claim".equals(mode)) {
+                String tok = claimToken;
+                if (tok == null || System.currentTimeMillis() > claimUntil || !Crypto.same(tok.getBytes(Proto.UTF8), h.optString("token", "").getBytes(Proto.UTF8))) { deny(link, "unknown"); return; }
+                if (hub.session != null) { deny(link, "busy"); return; }
+                claimToken = null;
+                if (claimName != null && !claimName.isEmpty()) name = claimName;
+                m = MODE_CLAIM;
             } else {
                 Pairing p = pairing;
                 if (!hosting && hub.session != null) { deny(link, "busy"); return; }
@@ -334,7 +374,8 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 }
                 m = Handshake.MODE_PIN;
             }
-            approveAndAttach(link, id, m, name, model, 0, "pc", "pc", link.remoteIp);
+            // the חיברתי program on Windows, or a browser page
+            approveAndAttach(link, id, m, name, model, 0, "program".equals(h.optString("client")) ? "program" : "pc", "pc", link.remoteIp);
         } catch (Exception e) {
             link.close();
         }
@@ -344,7 +385,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     private void approveAndAttach(Link link, String peerId, int mode, String name, String model, int sdk, String via, String kind, String ip) throws Exception {
         if (hub.busyWith(peerId)) { deny(link, "busy"); return; }
         boolean remember = true;
-        if (mode != Handshake.MODE_TRUSTED) {
+        if (mode != Handshake.MODE_TRUSTED && mode != MODE_CLAIM) {
             Request req = new Request(Crypto.hex(Crypto.random(6)), name, model, via);
             req.kind = kind;
             synchronized (this) { requests.put(req.rid, req); }
@@ -399,6 +440,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         if (s.host) { if (!hosting) teardownHostNet(); }
         else joiner.leaveNetwork();
         if (!hosting && !joiner.busy()) LinkService.stop(ctx);
+        if (pcReady) h.postDelayed(this::startPcReady, 1500);
     }
 
     void stopAll() {

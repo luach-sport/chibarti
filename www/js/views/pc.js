@@ -45,6 +45,9 @@
         return x + '<div class="card pad pc-wait"><span class="spin"></span>מכין רשת ישירה למחשב…</div>';
       }
       const a = CB.pcAddress(h);
+      if (h.claim) x += '<div class="notice green">' + icon('check', 'sm') + '<span class="grow"><b>נסרק.</b> התוכנה במחשב מתחברת לבד. אם המחשב לא על אותו Wi-Fi כמו הטלפון, מחברים אותו לרשת שבשלב 1.</span></div>';
+      else x += '<button type="button" class="pc-program" data-action="pc-scan">' + icon('scan') + '<span class="grow"><b>יש לך את תוכנת חיברתי במחשב?</b><span>סורקים את הקוד שבתוכנה, ומדלגים על כל השלבים</span></span>' + icon('chevL', 'sm') + '</button>' +
+        '<p class="pc-or">או מהדפדפן, בלי התקנה:</p>';
       const net = h.method === 'l'
         ? '<span>המחשב צריך להיות על אותו Wi-Fi כמו הטלפון' + (h.network ? ' (<bdi>' + esc(h.network) + '</bdi>)' : '') + '</span>'
         : '<span>במחשב מתחברים לרשת ה-Wi-Fi של הטלפון<span class="pc-box"><b class="ltr">' + esc(h.network || '') + '</b>' +
@@ -61,7 +64,7 @@
       if (h.web && h.web.fp) x += '<p class="fine pc-fp">טביעת האבטחה של הטלפון: <span class="ltr">' + esc(h.web.fp) + '</span></p>';
       return x;
     },
-    sig: () => { const h = CB.L().host || {}; return [h.ready, h.error, h.method, h.network, h.pass, (h.addresses || []).join(','), h.web && h.web.http, CB.L().mode].join('|'); },
+    sig: () => { const h = CB.L().host || {}; return [h.ready, h.error, h.claim, h.method, h.network, h.pass, (h.addresses || []).join(','), h.web && h.web.http, CB.L().mode].join('|'); },
     live: () => {
       const h = CB.L().host || {};
       if (!h.ready) return;

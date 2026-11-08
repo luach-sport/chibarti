@@ -106,6 +106,8 @@ public class ChibartiPlugin extends Plugin {
     // ---------- connecting ----------
     @PluginMethod public void host(PluginCall call) { hub.connect.host(); call.resolve(); }
     @PluginMethod public void stopHost(PluginCall call) { hub.connect.stopHost(); call.resolve(); }
+    @PluginMethod public void claim(PluginCall call) { hub.connect.claim(call.getString("token", ""), call.getString("name", "")); call.resolve(); }
+    @PluginMethod public void pcReady(PluginCall call) { hub.connect.pcReady(call.getBoolean("on", false)); call.resolve(); }
     @PluginMethod public void join(PluginCall call) { String e = hub.connect.joiner.joinQr(call.getString("qr", "")); call.resolve(one("error", e == null ? "" : e)); }
     @PluginMethod public void cancelJoin(PluginCall call) { hub.connect.joiner.cancel(); call.resolve(); }
     @PluginMethod public void scan(PluginCall call) { hub.connect.joiner.scan(); call.resolve(); }
@@ -294,6 +296,9 @@ public class ChibartiPlugin extends Plugin {
     @PluginMethod public void mirrorAnswer(PluginCall call) { hub.mirror.answer(call.getBoolean("accept", false)); call.resolve(); }
     @PluginMethod public void mirrorStop(PluginCall call) { hub.mirror.stop(true); call.resolve(); }
     @PluginMethod public void openViewer(PluginCall call) { hub.mirror.openViewer(); call.resolve(); }
+    @PluginMethod public void controlAnswer(PluginCall call) { hub.control.answer(call.getBoolean("allow", false)); call.resolve(); }
+    @PluginMethod public void controlStop(PluginCall call) { hub.control.stop(true); call.resolve(); }
+    @PluginMethod public void controlSettings(PluginCall call) { hub.control.openSettings(); call.resolve(); }
 
     // ---------- the phone: permissions, Wi-Fi, location, battery ----------
     private boolean granted(String p) { return ctx().checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED; }

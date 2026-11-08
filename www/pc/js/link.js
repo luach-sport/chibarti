@@ -1,5 +1,6 @@
-/* The connection to the phone: a WebSocket over HTTPS to the page's own address. First message HELLO with the
-   6-digit code (or this computer's remembered key); the phone answers after the user approves on the phone.
+/* The connection to the phone: a WebSocket over HTTPS to the page's own address (in the חיברתי program: through
+   the program, to the phone it found). First message HELLO with the 6-digit code, this computer's remembered key,
+   or (program) the token of the QR code the phone scanned; the phone answers after approving.
    A dropped connection comes back by itself for 30 s (same session key, no new code). */
 (function () {
   'use strict';
@@ -15,8 +16,12 @@
     return id;
   };
 
+  // the phone being talked to (the program finds phones on the network; a browser page talks to its own address)
+  PC.target = null;
+  const url = () => (PC.wsUrl && PC.target ? PC.wsUrl(PC.target) : 'wss://' + location.host + '/ws');
+
   function open(hello, onFirst) {
-    const ws = new WebSocket('wss://' + location.host + '/ws');
+    const ws = new WebSocket(url());
     ws.binaryType = 'arraybuffer';
     let first = true;
     ws.onopen = () => ws.send(PC.frame(T.HELLO, hello));
@@ -32,16 +37,20 @@
     return ws;
   }
 
-  /** mode: 'pin' (with the code) or 'trusted' (this computer was remembered). Resolves with null or an error code. */
-  PC.connect = (mode, pin, remember) => new Promise((resolve) => {
-    L.state = 'pairing';
-    L.error = '';
-    PC.render();
+  /** mode: 'pin' (with the code), 'trusted' (this computer was remembered) or 'claim' (pin = the QR token).
+      Resolves with null or an error code. quiet: no "connecting" on screen (the program trying in the background). */
+  PC.connect = (mode, pin, remember, quiet) => new Promise((resolve) => {
+    if (!quiet) { L.state = 'pairing'; L.error = ''; PC.render(); }
     const hello = { mode, id: PC.myId(), name: PC.store.get('name', '') || PC.deviceName(), model: PC.deviceModel() };
     if (mode === 'pin') hello.pin = pin;
+    else if (mode === 'claim') hello.token = pin;
     else hello.key = PC.store.get('pair', '');
+    if (PC.program) hello.client = 'program';
+    let done = false;
+    const fail = (why) => { if (done) return; done = true; if (!quiet || L.state === 'pairing') { L.state = 'off'; L.error = why; } PC.render(); resolve(why); };
     const ws = open(hello, (type, o, sock) => {
-      if (type !== T.APPROVED) { L.state = 'off'; L.error = o.reason || 'declined'; try { sock.close(); } catch (e) { /* gone */ } PC.render(); resolve(L.error); return; }
+      if (type !== T.APPROVED) { try { sock.close(); } catch (e) { /* gone */ } fail(o.reason || 'declined'); return; }
+      done = true;
       if (o.pair) { if (remember) PC.store.set('pair', o.pair); }
       if (mode === 'pin' && !remember) PC.store.set('pair', '');
       PC.store.set('phone', { name: o.name, id: o.id });
@@ -53,7 +62,7 @@
       PC.render();
       resolve(null);
     });
-    ws.onclose = () => { if (L.state === 'pairing') { L.state = 'off'; L.error = L.error || 'unreachable'; PC.render(); resolve(L.error); } };
+    ws.onclose = () => fail('unreachable');
   });
 
   function attach(ws) {

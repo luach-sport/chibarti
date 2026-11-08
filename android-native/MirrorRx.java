@@ -12,6 +12,8 @@ final class MirrorRx {
         void onAudio(byte[] body);
         void onStatus(String status);
         void onEnded(String why);
+        /** Remote control of the screen being watched: none / asking / controlling, and why it was refused. */
+        void onControl(String role, String error);
     }
 
     private static volatile Viewer viewer;
@@ -55,6 +57,8 @@ final class MirrorRx {
     static void detach(Viewer v) { if (viewer == v) viewer = null; }
 
     static void status(String s) { Viewer v = viewer; if (v != null) v.onStatus(s); }
+
+    static void control(String role, String error) { Viewer v = viewer; if (v != null) v.onControl(role, error); }
 
     static void end(String why) {
         boolean was = active;
