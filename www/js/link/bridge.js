@@ -68,7 +68,8 @@
         case 'cancelJoin': s.mode = 'idle'; s.join = base().join; changed(); return {};
         case 'disconnect': S.snap = Object.assign(base(), { devices: s.devices }); changed(); return {};
         case 'sendText': {
-          const msg = { id: CB.uid(), text: a.text, ts: now(), mine: true, peer: s.link ? s.link.name : '' };
+          const msg = { id: CB.uid(), text: a.text, ts: now(), mine: true, peer: s.link ? s.link.name : '', reply: a.reply || null };
+          S.lastSent = a;
           S.texts.push(msg); s.textCount = S.texts.length; emit('text', msg); changed(); return {};
         }
         case 'paste': return { text: 'https://example.com' };
@@ -89,6 +90,17 @@
           changed(); return { error: '' };
         }
         case 'cancelKnown': s.join = base().join; s.scan.on = false; changed(); return {};
+        case 'diag': return { device: 'Samsung SM-A546E · Android 13 (API 33)', text: S.diag != null ? S.diag : [
+          '11-12 21:58:02.114 host: start (Android 13, SM-A546E)',
+          '11-12 21:58:03.870 p2p: group ready: DIRECT-k7-Galaxy A54 (0 connected)',
+          '11-12 21:58:03.902 host: ready: Wi-Fi Direct DIRECT-k7-Galaxy A54, addresses [192.168.49.1, 192.168.1.23], port 47821',
+          '11-12 21:58:04.311 p2p: announcing (with network: true, 118 bytes)',
+          '11-12 21:58:04.420 p2p: announce identity ok',
+          '11-12 21:58:04.431 p2p: announce network ok',
+          '11-12 21:58:31.006 host: secure connection from 192.168.49.66 (code)',
+          '11-12 21:58:34.512 host: connected: Redmi Note 9 (wifi-direct)'].join('\n') };
+        case 'diagClear': S.diag = ''; return {};
+        case 'shareText': case 'controlAppInfo': return {};
         case 'mirrorStart': return { ok: false };
         default: return {};
       }

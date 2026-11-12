@@ -39,6 +39,16 @@ final class ControlLink {
         try { c.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); } catch (Exception ignored) { }
     }
 
+    /** The add-on's own page in Android's settings (⋮ → "Allow restricted settings" lives there, Android 13+). */
+    static void openAppInfo(Context c) {
+        try {
+            c.startActivity(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + PKG))
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Exception e) {
+            c.startActivity(new android.content.Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        }
+    }
+
     /** Play Protect's settings (to install the add-on when it blocks it), else the Play Store app. */
     static void openPlayProtect(Context c) {
         try { c.startActivity(new Intent("com.google.android.gms.settings.VERIFY_APPS_SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); return; } catch (Exception ignored) { }

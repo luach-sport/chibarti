@@ -48,6 +48,7 @@
       const names = ['מתחבר לרשת של הטלפון השני', 'יוצר חיבור מוצפן', 'מחכה לאישור בטלפון השני'];
       return duo(false) + '<h2 class="t">' + esc(CB.pre('מתחבר ל', L.join.name || 'טלפון השני')) + '</h2>' +
         '<div class="steps">' + names.map((n, i) => '<div class="step ' + (i < at ? 'done' : i === at ? 'now' : '') + '"><span class="dot">' + (i < at ? icon('check', 'xs') : '') + '</span>' + n + '</div>').join('') + '</div>' +
+        (L.join.route === 'invite' && st === 'network' ? '<p class="s hint">בטלפון השני אמורה לקפוץ הודעה של אנדרואיד, "הזמנה להתחבר". לוחצים שם "אישור".</p>' : '') +
         '<div class="acts one"><button type="button" class="hbtn ghost" data-action="cancel-join">ביטול</button></div>';
     }
     if (mode === 'hosting' && CB.ui.hostFor === 'pc') {
@@ -127,7 +128,7 @@
     sig: () => {
       const L = CB.L();
       const t = (L.transfers || []).filter((x) => ['asking', 'sending', 'receiving', 'paused', 'interrupted'].indexOf(x.state) >= 0).map((x) => x.tid + x.state).join(',');
-      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, L.join && L.join.step, L.join && L.join.error, L.join && L.join.want && L.join.want.id,
+      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, L.join && L.join.step, L.join && L.join.route, L.join && L.join.error, L.join && L.join.want && L.join.want.id,
         knownPhones().map((d) => d.id + d.name).join(','), L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
     },
     live: () => {

@@ -54,9 +54,11 @@ final class Server {
             Handshake.Result r = Handshake.server(c, gate.myId(), gate.secrets());
             gate.accepted(r, c.getInetAddress() == null ? null : c.getInetAddress().getHostAddress());
         } catch (Handshake.AuthException e) {
+            Diag.log("host", "secure connection refused from " + c.getInetAddress().getHostAddress() + " (code " + e.code + ")");
             if (e.code == Handshake.ERR_CODE) { try { Thread.sleep(1000); } catch (InterruptedException ignored) { } }
             try { c.close(); } catch (Exception ignored) { }
         } catch (Exception e) {
+            Diag.log("host", "connection from " + c.getInetAddress().getHostAddress() + " failed: " + Diag.why(e));
             try { c.close(); } catch (Exception ignored) { }
         }
     }

@@ -9,10 +9,17 @@
 
   const linkify = (s) => esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="#" dir="ltr" data-action="open-url" data-url="$1">$1</a>');
 
+  // A quoted message inside a bubble: who wrote it and its start; a tap jumps to it.
+  CB.quoteName = (r) => (r.from && r.from === (CB.L().me || {}).id ? 'אני' : r.name || CB.peerName() || '');
+  const quote = (r) => r && r.id ? '<button type="button" class="quote" data-action="quote-jump" data-id="' + esc(r.id) + '"><b>' + esc(CB.quoteName(r)) + '</b><span dir="auto">' + esc(CB.clip(r.text || '', 90)) + '</span></button>' : '';
+
   function bubble(m) {
-    return '<div class="msg ' + (m.mine ? 'mine' : 'theirs') + '"><div class="bubble" dir="auto">' + linkify(m.text) + '</div>' +
+    return '<div class="msg ' + (m.mine ? 'mine' : 'theirs') + '" data-id="' + esc(m.id) + '" data-mine="' + (m.mine ? 1 : 0) + '">' +
+      '<div class="bubble" dir="auto">' + quote(m.reply) + linkify(m.text) + '</div>' +
       '<div class="info"><span>' + CB.time(m.ts) + (m.mine ? '' : ' · ' + esc(m.peer || '')) + '</span>' +
-      '<button type="button" class="copy" data-action="text-copy" data-id="' + esc(m.id) + '">' + icon('copy', 'xs') + 'העתקה</button></div></div>';
+      '<button type="button" class="copy" data-action="text-reply" data-id="' + esc(m.id) + '">' + icon('reply', 'xs') + 'תגובה</button>' +
+      '<button type="button" class="copy" data-action="text-copy" data-id="' + esc(m.id) + '">' + icon('copy', 'xs') + 'העתקה</button></div>' +
+      '<span class="swipe-hint" aria-hidden="true">' + icon('reply', 'sm') + '</span></div>';
   }
 
   V.text = {
@@ -28,16 +35,29 @@
       if (CB.state.readTexts !== (CB.L().textCount || 0)) { CB.state.readTexts = CB.L().textCount || 0; CB.save(); }
       setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 0);
     },
-    sig: () => [CB.connected(), (ui.texts || []).length].join('|'),
-    restoreDraft: () => { const t = document.getElementById('composer'); if (t) { t.value = ui.draft || ''; grow(t); } }
+    // new messages are added in place (CB.onText): only empty ↔ not empty redraws, so the typing bar keeps its focus
+    sig: () => [CB.connected(), !!ui.texts, !(ui.texts || []).length].join('|'),
+    restoreDraft: () => { const t = document.getElementById('composer'); if (t) { t.value = ui.draft || ''; grow(t); } CB.replyBar(); }
   };
 
   function grow(t) { t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight + 2) + 'px'; }
   CB.growComposer = grow;
 
-  V.composer = () => '<div class="composer"><button type="button" class="icon-btn paste" data-action="text-paste" aria-label="הדבקה מהלוח">' + icon('paste') + '</button>' +
-    '<textarea id="composer" rows="1" placeholder="' + (CB.connected() ? esc(CB.pre('הודעה ל', CB.peerName())) : 'מתחברים כדי לשלוח') + '" aria-label="הודעה" data-draft="1"></textarea>' +
+  const placeholder = () => (CB.connected() ? CB.pre('הודעה ל', CB.peerName()) : 'מתחברים כדי לשלוח');
+  V.composer = () => '<div id="reply-bar"></div><div class="composer"><button type="button" class="icon-btn paste" data-action="text-paste" aria-label="הדבקה מהלוח">' + icon('paste') + '</button>' +
+    '<textarea id="composer" rows="1" placeholder="' + esc(placeholder()) + '" aria-label="הודעה" data-draft="1"></textarea>' +
     '<button type="button" class="icon-btn send" data-action="text-send" aria-label="שליחה">' + icon('send') + '</button></div>';
+  /** The typing bar stays (with its focus and keyboard) when the screen is drawn again; only its hint changes. */
+  V.composerUpdate = () => { const t = document.getElementById('composer'); if (t) t.placeholder = placeholder(); CB.replyBar(); };
+
+  // "Answering …" above the typing bar, with ✕ to cancel.
+  CB.replyBar = () => {
+    const el = document.getElementById('reply-bar');
+    if (!el) return;
+    const r = ui.reply;
+    el.innerHTML = r ? '<div class="reply-bar"><span class="ic">' + icon('reply', 'sm') + '</span><span class="grow"><b>' + esc(r.from === (CB.L().me || {}).id ? 'בתגובה להודעה שלי' : CB.pre('בתגובה ל', r.name || '')) + '</b><span dir="auto">' + esc(CB.clip(r.text, 80)) + '</span></span>' +
+      '<button type="button" class="icon-btn" data-action="reply-cancel" aria-label="ביטול התגובה">' + icon('close', 'sm') + '</button></div>' : '';
+  };
 
   CB.loadTexts = async () => {
     try { const r = await CB.N.call('texts'); ui.texts = (r && r.items) || []; } catch (e) { ui.texts = []; }

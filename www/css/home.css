@@ -51,3 +51,5 @@
 .qa.off { opacity: .62; }
 .qa .live { position: absolute; top: 14px; left: 14px; width: 10px; height: 10px; border-radius: 5px; background: #E5484D; animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .35; transform: scale(.8); } }
+
+.link-card .hint { margin: 10px 0 0; font-size: 13px; color: #FFE7A8; }

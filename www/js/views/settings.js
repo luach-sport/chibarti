@@ -27,6 +27,7 @@
       h += '<span class="section-label">חיבור</span><div class="card list">' +
         CB.navRow('open-setup', miss ? 'alert' : 'shield', 'חיבור והרשאות', miss ? 'חסר משהו כדי להתחבר. לחיצה לתיקון' : 'הכל מוכן') +
         CB.navRow('open-sheet', 'lock', 'פרטיות ואבטחה', 'מוצפן, ישיר, בלי אינטרנט ובלי שרת', '', ' data-sheet="privacy"') +
+        CB.navRow('open-diag', 'list', 'יומן חיבור', 'כל שלב בחיבור. משהו לא עובד? שולחים אותו למפתח') +
         CB.navRow('open-settings', 'battery', 'חיסכון בסוללה', env.batteryFree ? 'לא מגביל את חיברתי' : 'מומלץ: לא להגביל, כדי שהחיבור לא ייקטע ברקע', '', ' data-what="battery"') + '</div>';
       h += '<span class="section-label">כללי</span><div class="card list">' +
         CB.navRow('open-sheet', 'message', 'פנייה / הצעת ייעול', 'מה להוסיף? מה לשפר? הפנייה מגיעה ישירות למפתח', '', ' data-sheet="feedback"') +

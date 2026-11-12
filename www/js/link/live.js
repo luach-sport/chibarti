@@ -50,7 +50,13 @@
       CB.openSheet('offer', { tid: off.tid });
     }
     if (CB.sheetIs('offer') && !(s.offers || []).some((o) => o.tid === ui.sheet.data.tid)) CB.closeSheet();
-    // 5) a remembered phone was found but its key changed (it was forgotten there): type its code once
+    // 5) the add-on was installed after Play Protect's scanning was turned off for it: turn it back on
+    if (s.control && s.control.addon && CB.state.ppOff && !ui.sheet && !shown.ppBack) {
+      shown.ppBack = true;
+      CB.openSheet('ppBack');
+      return;
+    }
+    // 6) a remembered phone was found but its key changed (it was forgotten there): type its code once
     const pf = s.join && s.join.pinFor;
     if (pf && pf.key && !shown.pinFor[pf.key] && !ui.sheet) {
       shown.pinFor[pf.key] = 1;

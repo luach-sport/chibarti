@@ -20,7 +20,7 @@ final class Joiner implements LanBeacon.Found {
     private final Connect c;
     private final Hub hub;
     private volatile boolean joining = false, cancelled = false, scanning = false, joinedP2p = false;
-    private volatile String step = "", target = "", error = "", scanError = "";
+    private volatile String step = "", target = "", error = "", scanError = "", route = "";
     private volatile Socket pending;
     private volatile CountDownLatch p2pLatch;
     private volatile String p2pOwnerIp;
@@ -30,7 +30,7 @@ final class Joiner implements LanBeacon.Found {
     boolean busy() { return joining; }
 
     void describe(JSONObject s) throws Exception {
-        s.put("join", new JSONObject().put("on", joining).put("step", step).put("name", target).put("error", error)
+        s.put("join", new JSONObject().put("on", joining).put("step", step).put("name", target).put("error", error).put("route", route)
             .put("want", wantId.isEmpty() ? null : new JSONObject().put("id", wantId).put("name", wantName).put("until", wantUntil))
             .put("pinFor", pinFor.isEmpty() ? null : new JSONObject().put("key", pinFor).put("name", pinName)));
         JSONArray peers = new JSONArray();
@@ -57,6 +57,7 @@ final class Joiner implements LanBeacon.Found {
     private void setStep(String st) { step = st; hub.changed(); }
 
     private void fail(String code) {
+        Diag.log("join", "failed: " + code);
         error = code;
         joining = false;
         step = "";
@@ -73,6 +74,8 @@ final class Joiner implements LanBeacon.Found {
         if (q.id.equals(hub.ids.myId())) return "qr-self";
         if (hub.connected()) return "busy";
         if (!begin(q.name)) return "busy";
+        route = "qr";
+        Diag.log("join", "from a QR code: " + q.name + " (" + ("d".equals(q.method) ? "Wi-Fi Direct" : "h".equals(q.method) ? "hotspot" : "shared Wi-Fi") + ", addresses " + q.addresses + ")");
         work(() -> runQr(q));
         return null;
     }
@@ -85,6 +88,7 @@ final class Joiner implements LanBeacon.Found {
         }
         error = "";
         wantId = "";
+        route = "";
         target = name == null ? "" : name;
         if (c.hosting) c.stopHost();
         stopScan();
@@ -129,6 +133,7 @@ final class Joiner implements LanBeacon.Found {
      */
     private Joined viaNetwork(String method, String ssid, String pass, List<String> addrs, int port, int mode, byte[] secret, String id) throws Exception {
         setStep("network");
+        Diag.log("join", "joining the network " + ssid + " (" + ("d".equals(method) ? "Wi-Fi Direct" : "hotspot") + ")");
         if ("d".equals(method) && Build.VERSION.SDK_INT >= 29 && p2pJoin(ssid, pass)) {
             String addr = p2pOwnerIp == null ? WifiDirect.OWNER_IP : p2pOwnerIp;
             setStep("connecting");
@@ -136,7 +141,9 @@ final class Joiner implements LanBeacon.Found {
             if (r != null) return new Joined(r, addr, "wifi-direct", null);
         }
         if (cancelled) return null;
+        Diag.log("join", "joining as an ordinary Wi-Fi network");
         Network net = wifiJoin(ssid, pass);
+        Diag.log("join", "on the network, my addresses " + NetUtil.addresses());
         if (cancelled) throw new IOException("cancelled");
         setStep("connecting");
         List<String> cands = new ArrayList<>();
@@ -178,9 +185,11 @@ final class Joiner implements LanBeacon.Found {
             pending = s;
             return Handshake.client(s, hub.ids.myId(), mode, secret, expectId);
         } catch (Handshake.AuthException e) {
+            Diag.log("join", ip + " refused the " + Connect.modeName(mode) + " (code " + e.code + ")");
             if (s != null) { try { s.close(); } catch (Exception ignored) { } }
             throw e;
         } catch (Exception e) {
+            Diag.log("join", "no answer from " + ip + ":" + port + " (" + Diag.why(e) + ")");
             if (s != null) { try { s.close(); } catch (Exception ignored) { } }
             return null;
         }
@@ -206,6 +215,7 @@ final class Joiner implements LanBeacon.Found {
         if (!started.await(10, TimeUnit.SECONDS) || !ok[0]) return false;
         joinedP2p = true;
         boolean up = p2pLatch.await(25, TimeUnit.SECONDS);
+        Diag.log("join", "Wi-Fi Direct join " + (up ? "connected, host " + p2pOwnerIp : "did not connect in 25 s"));
         if (!up) { c.p2p.removeGroup(); joinedP2p = false; }
         return up;
     }
@@ -220,13 +230,14 @@ final class Joiner implements LanBeacon.Found {
         final CountDownLatch done = new CountDownLatch(1);
         final Object[] res = { null, null };
         c.wifi.join(ssid, pass, (net, err) -> { res[0] = net; res[1] = err; done.countDown(); });
-        if (!done.await(75, TimeUnit.SECONDS)) throw new IOException("timeout");
-        if (res[1] != null) throw new IOException("declined".equals(res[1]) ? "wifi-declined" : "unreachable");
+        if (!done.await(75, TimeUnit.SECONDS)) { Diag.log("join", "Wi-Fi join: no answer in 75 s"); throw new IOException("timeout"); }
+        if (res[1] != null) { Diag.log("join", "Wi-Fi join failed: " + res[1]); throw new IOException("declined".equals(res[1]) ? "wifi-declined" : "unreachable"); }
         return (Network) res[0];
     }
 
     private void finish(Handshake.Result r, String via, String addr, int port, Network net, int mode) throws Exception {
         setStep("approval");
+        Diag.log("join", "secure connection to " + addr + " (" + via + ", " + Connect.modeName(mode) + "), waiting for approval");
         JSONObject hello = new JSONObject().put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1);
         r.link.send(Proto.HELLO, Proto.json(hello));
         r.link.setReadTimeout(75000);
@@ -235,6 +246,7 @@ final class Joiner implements LanBeacon.Found {
         r.link.setReadTimeout(0);
         if (f.type == Proto.DENIED) {
             String why = new JSONObject(f.text()).optString("reason", "declined");
+            Diag.log("join", "the other phone refused: " + why);
             r.link.close();
             throw new IOException(why);
         }
@@ -253,6 +265,7 @@ final class Joiner implements LanBeacon.Found {
         s.network = net;
         joining = false;
         step = "";
+        Diag.log("join", "connected to " + name + (pair.isEmpty() ? "" : " (remembered from now on)"));
         hub.attach(s, r.link);
     }
 
@@ -260,6 +273,7 @@ final class Joiner implements LanBeacon.Found {
     void scan() {
         scanning = true;
         scanError = "";
+        Diag.log("join", "searching nearby (Wi-Fi Direct" + (c.p2p.supported() ? "" : " not supported") + ", and the shared Wi-Fi)");
         c.beacon.startListening(hub.ids.myId(), this);
         if (c.p2p.supported()) {
             c.p2p.clearPeers();
@@ -285,7 +299,15 @@ final class Joiner implements LanBeacon.Found {
         hub.changed();
     }
 
-    @Override public void onLanPeers() { checkWanted(); hub.changed(); }
+    private final java.util.Set<String> lanSeen = new java.util.HashSet<>();
+
+    @Override public void onLanPeers() {
+        synchronized (c.beacon.peers) {
+            for (LanBeacon.Peer p : c.beacon.peers.values()) if (lanSeen.add(p.id)) Diag.log("join", "found on the shared Wi-Fi: " + p.name + " (" + p.ip + ")");
+        }
+        checkWanted();
+        hub.changed();
+    }
 
     /** Connects to a phone from the nearby list. pin may be empty for a paired phone. */
     String connectPeer(String key, String pin) {
@@ -305,34 +327,42 @@ final class Joiner implements LanBeacon.Found {
         final int mode = usePin ? Handshake.MODE_PIN : Handshake.MODE_TRUSTED;
         final byte[] secret = usePin ? pin.getBytes(Proto.UTF8) : trusted;
         // a remembered phone opens the other phone's network with the key it got last time; without it, the code
-        NetSeal.Net known = null;
+        String known = null;
         if (!lan && !usePin && !pp.sealKnown.isEmpty()) {
-            known = NetSeal.open(hub.ids.peerNet(id), pp.sealKnown);
-            if (known == null) return "need-pin";
+            known = NetSeal.open(hub.ids.peerNet(id), pp.method, pp.ssid, pp.sealKnown);
+            if (known == null) { Diag.log("join", (pp.name == null ? pp.deviceName : pp.name) + ": no key yet for its network, the code is needed once"); return "need-pin"; }
         }
-        final NetSeal.Net fknown = known;
+        final String fknown = known;
         final LanBeacon.Peer flp = lp;
         final WifiDirect.Peer fpp = pp;
         if (!begin(lan ? lp.name : (pp.name != null ? pp.name : pp.deviceName))) return "busy";
         pinFor = "";
+        Diag.log("join", "to " + target + " from the nearby list: " + (lan ? "same Wi-Fi " + lp.ip : "Wi-Fi Direct " + pp.address + (pp.ssid.isEmpty() ? " (no network details announced)" : " (network " + pp.ssid + ")")) + ", " + (usePin ? "with the code" : "remembered"));
         work(() -> {
             try {
                 Joined j;
                 if (lan) {
+                    route = "lan";
                     Network net = NetUtil.wifiNetwork(hub.ctx);
                     Handshake.Result r = attempt(flp.ip, flp.port, net, mode, secret, id);
                     j = r == null ? null : new Joined(r, flp.ip, "wifi", net);
                 } else {
-                    NetSeal.Net n = fknown;
-                    if (n == null && usePin && !fpp.sealPin.isEmpty()) {
-                        n = openWithPin(fpp.address, pin, id);
-                        if (n == null) throw new IOException(cancelled ? "cancelled" : "wrong-code");
+                    String pass = fknown;
+                    if (pass == null && usePin && !fpp.sealPin.isEmpty()) {
+                        pass = openWithPin(fpp.address, pin, id);
+                        if (pass == null) throw new IOException(cancelled ? "cancelled" : "wrong-code");
                     }
-                    if (n != null) {
+                    if (pass != null) {
+                        route = "net";
                         List<String> addrs = new ArrayList<>();
                         for (String a : fpp.addrs.split(",")) if (!a.trim().isEmpty()) addrs.add(a.trim());
-                        j = viaNetwork(n.method, n.ssid, n.pass, addrs, fpp.port, mode, secret, id);
-                    } else j = viaInvitation(fpp, mode, secret, id); // a phone with an older Chibarti
+                        j = viaNetwork(fpp.method, fpp.ssid, pass, addrs, fpp.port, mode, secret, id);
+                    } else {
+                        // the other phone's network details didn't arrive (or it has an older Chibarti)
+                        route = "invite";
+                        hub.changed();
+                        j = viaInvitation(fpp, mode, secret, id);
+                    }
                 }
                 if (j == null) throw new IOException(cancelled ? "cancelled" : "unreachable");
                 finish(j.r, j.via, j.addr, j.via.equals("wifi") ? flp.port : fpp.port, j.net, mode);
@@ -349,7 +379,7 @@ final class Joiner implements LanBeacon.Found {
      * Opens the network seal with the typed code. The code on the other phone may have just changed (a new seal is
      * announced within seconds), so on a mismatch it asks again for a few seconds before saying the code is wrong.
      */
-    private NetSeal.Net openWithPin(String address, String pin, String hostId) throws InterruptedException {
+    private String openWithPin(String address, String pin, String hostId) throws InterruptedException {
         byte[] k = NetSeal.pinKey(pin, hostId);
         long until = System.currentTimeMillis() + 9000;
         String tried = null;
@@ -358,8 +388,9 @@ final class Joiner implements LanBeacon.Found {
             synchronized (c.p2p.peers) { p = c.p2p.peers.get(address); }
             String w = p == null ? "" : p.sealPin;
             if (!w.isEmpty() && !w.equals(tried)) {
-                NetSeal.Net n = NetSeal.open(k, w);
-                if (n != null) return n;
+                String pass = NetSeal.open(k, p.method, p.ssid, w);
+                if (pass != null) { Diag.log("join", "the code opened the network details"); return pass; }
+                Diag.log("join", "the code doesn't open the announced details" + (tried == null ? ", asking again (the code may have just changed)" : ""));
                 if (tried == null) c.p2p.refreshServices();
                 tried = w;
             }
@@ -405,11 +436,19 @@ final class Joiner implements LanBeacon.Found {
         pinFor = "";
         error = "";
         if (c.hosting) c.stopHost();
+        Diag.log("join", "looking for the remembered " + name + " (has its network key: " + (hub.ids.peerNet(id) != null) + ")");
         if (!scanning) scan();
         checkWanted();
         wantTimeout();
         hub.changed();
         return null;
+    }
+
+    private String seenSummary() {
+        StringBuilder sb = new StringBuilder();
+        synchronized (c.beacon.peers) { for (LanBeacon.Peer p : c.beacon.peers.values()) sb.append(p.name).append(" [same Wi-Fi], "); }
+        synchronized (c.p2p.peers) { for (WifiDirect.Peer p : c.p2p.peers.values()) sb.append(p.name != null ? p.name : p.deviceName).append(p.app ? " [Chibarti" + (p.id == null ? ", no id" : "") + "]" : "").append(", "); }
+        return sb.length() == 0 ? "nothing" : sb.toString();
     }
 
     void cancelKnown() {
@@ -425,6 +464,7 @@ final class Joiner implements LanBeacon.Found {
             if (System.currentTimeMillis() < wantUntil) { wantTimeout(); return; }
             String n = wantName;
             wantId = "";
+            Diag.log("join", n + " not found in 2 minutes; seen: " + seenSummary());
             stopScan();
             hub.notice("known-not-found", n);
             hub.changed();
@@ -440,6 +480,7 @@ final class Joiner implements LanBeacon.Found {
         if (key == null) synchronized (c.p2p.peers) { for (WifiDirect.Peer p : c.p2p.peers.values()) if (p.app && id.equals(p.id)) key = "p:" + p.address; }
         if (key == null) return;
         synchronized (this) { if (!id.equals(wantId)) return; wantId = ""; } // found once, connected once
+        Diag.log("join", "found the remembered " + wantName + " (" + (key.startsWith("l:") ? "same Wi-Fi" : "Wi-Fi Direct") + ")");
         final String k = key;
         hub.h.post(() -> {
             String err = connectPeer(k, null);
@@ -479,7 +520,7 @@ final class Joiner implements LanBeacon.Found {
                     try { Thread.sleep(2000); } catch (InterruptedException ie) { return; }
                 }
             }
-            if (s.state == Session.RECONNECTING) s.close("lost", false);
+            if (s.state == Session.RECONNECTING) { Diag.log("join", "could not reconnect in 30 s"); s.close("lost", false); }
         });
     }
 

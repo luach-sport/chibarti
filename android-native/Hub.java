@@ -36,6 +36,7 @@ final class Hub implements Session.Listener {
 
     private Hub(Context c) {
         ctx = c;
+        Diag.attach(new java.io.File(c.getFilesDir(), "diag.log"));
         ids = new Ids(c);
         history = new History(c);
         connect = new Connect(this);
@@ -170,6 +171,7 @@ final class Hub implements Session.Listener {
     @Override public void onStreamFrame(Session s, Link.Frame f) { if (s == session) mirror.onStream(f); }
 
     @Override public void onLinkLost(Session s) {
+        Diag.log("link", "connection with " + s.peerName + " dropped, " + (s.host ? "waiting for it to come back" : "reconnecting"));
         transfers.onLinkLost();
         mirror.onLinkLost();
         connect.onLinkLost(s);
@@ -178,6 +180,7 @@ final class Hub implements Session.Listener {
     }
 
     @Override public void onResumed(Session s) {
+        Diag.log("link", "connection with " + s.peerName + " is back");
         transfers.onResumed();
         mirror.onResumed();
         notice("resumed", s.peerName);
@@ -186,6 +189,7 @@ final class Hub implements Session.Listener {
 
     @Override public void onClosed(Session s, String reason) {
         synchronized (this) { if (session == s) session = null; else return; }
+        Diag.log("link", "ended with " + s.peerName + ": " + reason);
         transfers.onClosed();
         mirror.onClosed();
         connect.onSessionClosed(s, reason);
@@ -194,11 +198,14 @@ final class Hub implements Session.Listener {
     }
 
     // ---------- text messages ----------
-    void sendText(String text) {
+    /** reply: the message this one answers ({id, text, name}), or null. */
+    void sendText(String text, JSONObject reply) {
         text = text == null ? "" : text;
         if (text.length() > 20000) text = text.substring(0, 20000);
         try {
             JSONObject m = new JSONObject().put("id", Crypto.hex(Crypto.random(6))).put("text", text).put("ts", System.currentTimeMillis());
+            JSONObject r = cleanReply(reply);
+            if (r != null) m.put("reply", r);
             send(Proto.TEXT, m);
             onText(m, true);
         } catch (Exception ignored) { }
@@ -210,11 +217,23 @@ final class Hub implements Session.Listener {
         Session s = session;
         JSONObject m = new JSONObject().put("id", QrPayload.clean(o.optString("id"), 20)).put("text", text)
             .put("ts", System.currentTimeMillis()).put("mine", mine).put("peer", s == null ? "" : s.peerName);
+        JSONObject r = cleanReply(o.optJSONObject("reply"));
+        if (r != null) m.put("reply", r);
         history.addText(m);
         Out ot = out;
         if (ot != null) h.post(() -> ot.emit("text", m));
         if (!mine) LinkService.textArrived(ctx, s == null ? "" : s.peerName, text);
         changed();
+    }
+
+    /** A quoted message: its id, the start of its text and who wrote it (nothing else is kept). */
+    static JSONObject cleanReply(JSONObject r) {
+        if (r == null) return null;
+        String id = QrPayload.clean(r.optString("id"), 20), t = r.optString("text", "");
+        if (id.isEmpty()) return null;
+        if (t.length() > 200) t = t.substring(0, 200);
+        String from = r.optString("from", "");
+        try { return new JSONObject().put("id", id).put("text", t).put("name", QrPayload.clean(r.optString("name"), 40)).put("from", from.matches("[0-9a-f]{32}") ? from : ""); } catch (Exception e) { return null; }
     }
 
     JSONArray texts() { return history.texts(); }

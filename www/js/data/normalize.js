@@ -23,7 +23,9 @@
       outbox: Array.isArray(raw.outbox) ? raw.outbox.filter(CB.isObj).slice(-30) : [],
       profile: CB.isObj(raw.profile) ? { name: CB.str(raw.profile.name, 80), email: CB.str(raw.profile.email, 120) } : d.profile,
       updateSeen: Number(raw.updateSeen) || 0,
-      readTexts: Number(raw.readTexts) || 0
+      readTexts: Number(raw.readTexts) || 0,
+      // Play Protect's scanning was turned off to install the add-on: remind to turn it back on
+      ppOff: !!raw.ppOff
     };
   };
 })();

@@ -61,6 +61,7 @@ final class Transfers {
         j.peer = peer();
         j.state = "asking";
         jobs.put(j.tid, j);
+        Diag.log("files", "offering " + j.o.items.size() + " file(s), " + j.o.total() + " bytes, to " + j.peer);
         offer(j, false);
         hub.changed();
         return j.tid;
@@ -104,6 +105,7 @@ final class Transfers {
             } catch (OutgoingJob.Cancelled e) {
                 // cancel() already updated the state
             } catch (Exception e) {
+                Diag.log("files", "sending stopped: " + Diag.why(e));
                 synchronized (Transfers.this) {
                     if (j.active()) {
                         boolean wait = s.state == Session.RECONNECTING;
@@ -169,7 +171,7 @@ final class Transfers {
             case Proto.OFFER: onOffer(o, j); break;
             case Proto.OFFER_REPLY:
                 if (j == null || !j.out) return;
-                if (!o.optBoolean("accept")) { j.state = "declined"; j.reason = o.optString("reason", "peer"); finish(j); break; }
+                if (!o.optBoolean("accept")) { j.state = "declined"; j.reason = o.optString("reason", "peer"); Diag.log("files", "not accepted: " + j.reason); finish(j); break; }
                 JSONObject at = o.optJSONObject("offsets");
                 j.o.resumeAt.clear();
                 if (at != null) for (OutgoingJob.Item it : j.o.items) {
@@ -190,11 +192,13 @@ final class Transfers {
                 String err = j.i.onEnd(fid, o.optLong("size", -1), o.optString("sha"));
                 hub.send(Proto.FILE_ACK, new JSONObject().put("tid", tid).put("fid", fid).put("ok", err == null).put("error", err == null ? "" : err));
                 if (it != null && !already) record(false, it.name, it.mime, it.size, err == null ? "done" : "failed", it.location, err);
+                if (err != null) Diag.log("files", "received file failed its check: " + err);
                 if (j.i.finished()) { j.state = allOk(j) ? "done" : "partial"; finish(j); if ("done".equals(j.state)) hub.notice("received", String.valueOf(j.i.items.size())); }
                 break;
             case Proto.FILE_ACK:
                 if (j == null || !j.out) return;
                 j.o.acked(o.optInt("fid"), o.optBoolean("ok"), o.optString("error"));
+                if (!o.optBoolean("ok")) Diag.log("files", "the other phone says a file failed: " + o.optString("error"));
                 for (OutgoingJob.Item x : j.o.items) if (x.fid == o.optInt("fid")) record(true, x.name, x.mime, x.size, o.optBoolean("ok") ? "done" : "failed", x.uri, o.optString("error"));
                 if (j.o.finished()) { j.state = allOk(j) ? "done" : "partial"; finish(j); if ("done".equals(j.state)) hub.notice("sent", String.valueOf(j.o.items.size())); }
                 break;
@@ -244,6 +248,7 @@ final class Transfers {
         try {
             j.i.onChunk(fid, off, body, 16, body.length - 16);
         } catch (IOException e) {
+            Diag.log("files", "receiving stopped: " + Diag.why(e));
             synchronized (this) {
                 try { hub.send(Proto.CANCEL, new JSONObject().put("tid", tid).put("reason", e.getMessage())); } catch (Exception ignored) { }
                 stop(j, "failed", "write");

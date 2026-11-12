@@ -130,23 +130,37 @@ final class SessionTests {
             check(ends[0] == 1 && out.items.get(0).state == OutgoingJob.CHECKING, "sent again");
         });
 
-        test("the nearby announcement's network opens with the right code or a remembered key only", () -> {
-            String host = "0123456789abcdef0123456789abcdef";
-            NetSeal.Net n = new NetSeal.Net("d", "DIRECT-aB-Galaxy A52", "x7Kp2mQz");
-            String w = NetSeal.seal(NetSeal.pinKey("042913", host), n);
-            NetSeal.Net got = NetSeal.open(NetSeal.pinKey("042913", host), w);
-            check(got != null && got.method.equals("d") && got.ssid.equals(n.ssid) && got.pass.equals(n.pass), "right code");
-            check(NetSeal.open(NetSeal.pinKey("042914", host), w) == null, "wrong code");
-            check(NetSeal.open(NetSeal.pinKey("042913", "fedcba9876543210fedcba9876543210"), w) == null, "other phone's salt");
+        test("the nearby announcement's password opens with the right code or a remembered key only", () -> {
+            String host = "0123456789abcdef0123456789abcdef", ssid = "DIRECT-aB-Galaxy A52";
+            String w = NetSeal.seal(NetSeal.pinKey("042913", host), "d", ssid, "x7Kp2mQz");
+            check("x7Kp2mQz".equals(NetSeal.open(NetSeal.pinKey("042913", host), "d", ssid, w)), "right code");
+            check(NetSeal.open(NetSeal.pinKey("042914", host), "d", ssid, w) == null, "wrong code");
+            check(NetSeal.open(NetSeal.pinKey("042913", "fedcba9876543210fedcba9876543210"), "d", ssid, w) == null, "other phone's salt");
+            check(NetSeal.open(NetSeal.pinKey("042913", host), "d", "DIRECT-zz-Other", w) == null, "moved to another network");
+            check(NetSeal.open(NetSeal.pinKey("042913", host), "h", ssid, w) == null, "another kind of network");
             char[] t = w.toCharArray();
             t[20] = t[20] == 'A' ? 'B' : 'A';
-            check(NetSeal.open(NetSeal.pinKey("042913", host), new String(t)) == null, "changed");
+            check(NetSeal.open(NetSeal.pinKey("042913", host), "d", ssid, new String(t)) == null, "changed");
             byte[] known = Crypto.random(32);
-            NetSeal.Net h = new NetSeal.Net("h", "AndroidShare_4821", "longer hotspot passphrase 123");
-            String r = NetSeal.seal(known, h);
-            check(NetSeal.open(known, r) != null && NetSeal.open(known, r).pass.equals(h.pass), "remembered key");
-            check(NetSeal.open(Crypto.random(32), r) == null && NetSeal.open(null, r) == null, "other key");
-            check(w.length() < 200 && r.length() < 200, "fits the announcement: " + w.length() + "/" + r.length());
+            String r = NetSeal.seal(known, "h", "AndroidShare_4821", "longer hotspot passphrase 123");
+            check("longer hotspot passphrase 123".equals(NetSeal.open(known, "h", "AndroidShare_4821", r)), "remembered key");
+            check(NetSeal.open(Crypto.random(32), "h", "AndroidShare_4821", r) == null && NetSeal.open(null, "h", "AndroidShare_4821", r) == null, "other key");
+            check(w.length() <= 50, "short: " + w.length());
+            String name = "DIRECT-ab-איציק=נגן";
+            check(NetSeal.txtSafe(name).indexOf('=') < 0 && NetSeal.txtRead(NetSeal.txtSafe(name)).equals(name), "a network name is safe in the announcement");
+        });
+
+        test("the connection log keeps the newest lines and stays small", () -> {
+            java.io.File f = java.io.File.createTempFile("diag", ".log");
+            f.delete();
+            Diag.attach(f);
+            Diag.clear();
+            for (int i = 0; i < Diag.MAX + 50; i++) Diag.log("t", "line " + i);
+            String[] lines = Diag.text().trim().split("\n");
+            check(lines.length == Diag.MAX && lines[lines.length - 1].endsWith("t: line " + (Diag.MAX + 49)) && lines[0].endsWith("t: line 50"), "newest kept: " + lines.length);
+            check(f.length() < 60000, "file small: " + f.length());
+            Diag.log("t", "two\nlines");
+            check(Diag.text().contains("two lines"), "one line per entry");
         });
     }
 }

@@ -114,10 +114,12 @@ export const SCENES = [
   scene('received', CONNECTED + HISTORY + " ui.tab = 'files'; ui.filesSeg = 'received'; K.render();"),
   scene('text', CONNECTED + ` ui.texts = [
     { id: '1', text: 'מה הסיסמה של ה-Wi-Fi בסלון?', ts: Date.now() - 300000, mine: false, peer: 'Redmi Note 9' },
-    { id: '2', text: 'Cohen-Home-5G', ts: Date.now() - 260000, mine: true },
+    { id: '2', text: 'Cohen-Home-5G', ts: Date.now() - 260000, mine: true, reply: { id: '1', text: 'מה הסיסמה של ה-Wi-Fi בסלון?', name: 'Redmi Note 9', from: 'b1' } },
     { id: '3', text: 'וזה הקישור לטופס: https://forms.example.org/r/8841', ts: Date.now() - 240000, mine: true },
     { id: '4', text: 'תודה! התחברתי', ts: Date.now() - 60000, mine: false, peer: 'Redmi Note 9' }];
-    K.sim.set({ textCount: 4 }); ui.tab = 'text'; K.render();`),
+    K.sim.set({ textCount: 4 }); ui.tab = 'text'; K.render(); K.startReply('4');`),
+  scene('control-guide', SHARING_TO_PC + " K.state.ppOff = true; K.ui.env = { sdk: 33, release: '13', brand: 'samsung' }; K.sim.set({ control: { role: 'setup', error: '', addon: true, service: false, can: true } });", { wait: 900 }),
+  scene('diag', "ui.tab = 'settings'; K.render(); K.A['open-diag']();", { wait: 900 }),
   scene('settings', CONNECTED + ENV + " ui.tab = 'settings'; K.render();", { wait: 800 }),
   scene('known', KNOWN + " K.render();", { wait: 500 }),
   scene('devices', KNOWN + " K.pushView({ name: 'devices' });", { wait: 600 }),

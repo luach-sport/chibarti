@@ -126,7 +126,11 @@ public final class FakePhone {
         switch (f.type) {
             case Proto.PING: l.send(Proto.PONG, f.body); break;
             case Proto.PONG: break;
-            case Proto.TEXT: text(o.optString("text")); break;
+            case Proto.TEXT:
+                lastTextId = o.optString("id");
+                if (o.optJSONObject("reply") != null) log.println("REPLY " + o.getJSONObject("reply").optString("id") + " " + o.getJSONObject("reply").optString("text"));
+                text(o.optString("text"));
+                break;
             case Proto.OFFER: {
                 JSONArray files = o.getJSONArray("files");
                 for (int i = 0; i < files.length(); i++) {
@@ -215,11 +219,14 @@ public final class FakePhone {
             send(l, Proto.BYE, new JSONObject().put("reason", "user"));
             l.close();
         } else {
-            send(l, Proto.TEXT, new JSONObject().put("id", "abc123").put("text", "קיבלתי: " + t).put("ts", System.currentTimeMillis()));
+            // the answer quotes the message it answers (like a phone that dragged it to answer)
+            send(l, Proto.TEXT, new JSONObject().put("id", "abc123").put("text", "קיבלתי: " + t).put("ts", System.currentTimeMillis())
+                .put("reply", new JSONObject().put("id", lastTextId).put("text", t).put("name", "מחשב")));
         }
     }
 
     static volatile long pending = 0;
+    static volatile String lastTextId = "";
 
     /** The same bytes every time, so the test can check the file that the page saved. */
     static byte pattern(long i) { return (byte) ((i * 31 + (i >> 9)) & 255); }

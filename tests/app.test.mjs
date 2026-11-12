@@ -176,6 +176,84 @@ await page.waitForTimeout(400);
 ok(await ev(() => !window.__chibarti.CB.sheetIs('control') && !!document.querySelector('.ctl-on [data-action="control-stop"]')), 'controlled banner with stop');
 await noSideScroll('controlled');
 
+// ---------- messages: answering by dragging a message to the left; the typing bar stays and empties ----------
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.reply = null;
+  K.sim.set({ mode: 'connected', me: { id: '0123456789abcdef0123456789abcdef', name: 'Galaxy A54' }, link: { peerId: 'fedcba9876543210fedcba9876543210', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', since: Date.now(), quality: 'great' } });
+  K.ui.texts = [{ id: 'm1', text: 'מה הסיסמה של ה-Wi-Fi בסלון?', ts: Date.now() - 60000, mine: false, peer: 'Redmi Note 9' }];
+  K.ui.tab = 'text'; K.render(true); });
+await page.waitForTimeout(300);
+const swiped = await ev(async () => {
+  const m = document.querySelector('#thread .msg[data-id="m1"] .bubble');
+  const r = m.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const touch = (type, dx) => {
+    const t = new Touch({ identifier: 1, target: m, clientX: x + dx, clientY: y });
+    m.dispatchEvent(new TouchEvent(type, { bubbles: true, touches: type === 'touchend' ? [] : [t], changedTouches: [t] }));
+  };
+  touch('touchstart', 0); touch('touchmove', -20); touch('touchmove', -45); touch('touchmove', -66);
+  const armed = document.querySelector('#thread .msg[data-id="m1"]').classList.contains('armed');
+  touch('touchend', -66);
+  await new Promise((r) => setTimeout(r, 50));
+  return { armed, bar: (document.getElementById('reply-bar') || {}).textContent || '' };
+});
+ok(swiped.armed && swiped.bar.includes('בתגובה ל-Redmi Note 9') && swiped.bar.includes('מה הסיסמה'), 'dragging a message to the left answers it', swiped);
+await noSideScroll('answering a message');
+const box1 = await ev(() => document.getElementById('composer'));
+await page.fill('#composer', 'Cohen-Home-5G');
+await page.click('[data-action="text-send"]');
+await page.waitForTimeout(150);
+const sent = await ev(() => { const K = window.__chibarti.CB, t = document.getElementById('composer'); return { box: t.value, focus: document.activeElement === t, reply: K.sim.S.lastSent.reply && K.sim.S.lastSent.reply.id, bar: document.getElementById('reply-bar').textContent, quote: (document.querySelector('#thread .msg.mine .quote') || {}).textContent || '' }; });
+ok(sent.box === '' && sent.focus && sent.reply === 'm1' && sent.bar === '' && sent.quote.includes('Redmi Note 9') && sent.quote.includes('מה הסיסמה'), 'sent with the quote; the box is empty and keeps the keyboard', sent);
+// the keyboard writes back the word it was still composing: it's removed again
+await page.fill('#composer', 'שלום עוד');
+await page.click('[data-action="text-send"]');
+await ev(() => { const t = document.getElementById('composer'); setTimeout(() => { t.value = 'עוד'; t.dispatchEvent(new Event('input', { bubbles: true })); }, 20); });
+await page.waitForTimeout(450);
+ok(await ev(() => document.getElementById('composer').value === '' && window.__chibarti.CB.ui.draft === ''), 'a word the keyboard puts back after sending is removed');
+await ev(() => window.__chibarti.CB.sim.emit('text', { id: 'm9', text: 'תודה', ts: Date.now(), mine: false, peer: 'Redmi Note 9' }));
+await ev(() => window.__chibarti.CB.sim.set({ textCount: 4 }));
+await page.waitForTimeout(400);
+ok(await ev(() => document.querySelectorAll('#thread .msg').length === 4 && !!document.getElementById('composer')), 'a new message keeps the typing bar');
+await page.click('#thread .msg.mine .quote');
+await page.waitForTimeout(100);
+ok(await ev(() => document.querySelector('#thread .msg[data-id="m1"]').classList.contains('flash')), 'a quote jumps to the original message');
+
+// ---------- remote control: the step-by-step guide for the add-on, and "turn the scanning back on" ----------
+await ev(() => { const K = window.__chibarti.CB; K.closeSheet(); K.state.ppOff = false; K.ui.env = Object.assign({}, K.ui.env || {}, { sdk: 33, release: '13', brand: 'samsung' });
+  K.sim.set({ mirror: { role: 'sending', state: 'live', error: '' }, control: { role: 'install', error: '', addon: false, service: false, can: true } }); });
+await page.waitForTimeout(400);
+const g1 = await ev(() => ({ open: window.__chibarti.CB.sheetIs('control'), steps: document.querySelectorAll('.sheet .guide .g').length, now: (document.querySelector('.sheet .guide .g.now .t') || {}).textContent }));
+ok(g1.open && g1.steps === 3 && g1.now.includes('Play Protect'), 'add-on guide: three steps, Play Protect first', g1);
+await noSideScroll('add-on guide');
+await page.click('.sheet [data-action="control-play-protect"]');
+await page.waitForTimeout(200);
+ok(await ev(() => window.__chibarti.CB.state.ppOff === true && document.querySelectorAll('.sheet .guide .g.done').length === 1 && document.querySelector('.sheet .guide .g.now .t').textContent.includes('מתקינים')), 'step 1 done, now install');
+await ev(() => window.__chibarti.CB.sim.set({ control: { role: 'setup', error: '', addon: true, service: false, can: true } }));
+await page.waitForTimeout(400);
+const g2 = await ev(() => ({ txt: document.querySelector('.sheet').textContent, info: !!document.querySelector('.sheet [data-action="control-app-info"]'), back: !!document.querySelector('.sheet [data-action="pp-back-done"]') }));
+ok(g2.back && g2.info && g2.txt.includes('מדליקים בחזרה את סריקת Play Protect') && g2.txt.includes('התרת הגדרות מוגבלות') && g2.txt.includes('הגדרות הנגישות'), 'after installing: scanning back on, restricted settings, accessibility', g2);
+await noSideScroll('add-on setup guide');
+await page.click('.sheet [data-action="pp-back-done"]');
+await page.waitForTimeout(200);
+ok(await ev(() => window.__chibarti.CB.state.ppOff === false && !document.querySelector('.sheet [data-action="pp-back-done"]')), 'scanning marked as back on');
+await ev(() => { const K = window.__chibarti.CB; K.sim.set({ control: { role: 'none', error: '', addon: false, service: false, can: true } }); K.closeSheet(); K.state.ppOff = true;
+  K.sim.set({ control: { role: 'none', error: '', addon: true, service: false, can: true } }); });
+await page.waitForTimeout(400);
+ok(await ev(() => window.__chibarti.CB.sheetIs('ppBack') && document.querySelector('.sheet').textContent.includes('Play Protect')), 'the reminder pops up by itself once the add-on is there');
+await ev(() => { const K = window.__chibarti.CB; K.state.ppOff = false; K.closeSheet(); });
+
+// ---------- the connection log ----------
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.ui.stack = []; K.ui.tab = 'settings'; K.render(); });
+await page.waitForTimeout(400);
+await page.click('[data-action="open-diag"]');
+await page.waitForTimeout(400);
+const dg = await ev(() => ({ log: (document.getElementById('diag-log') || {}).textContent || '', send: !!document.querySelector('[data-action="diag-send"]') }));
+ok(dg.send && dg.log.includes('group ready') && dg.log.includes('announce network ok'), 'connection log page', dg);
+await noSideScroll('connection log');
+await page.click('[data-action="diag-send"]');
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('feedback') && document.getElementById('fbm').value.includes('יומן חיבור') && document.getElementById('fbm').value.includes('group ready')), 'the log goes into a message to the developer');
+await ev(() => window.__chibarti.CB.closeSheet());
+
 // ---------- remembered devices: one tap on Home or in the list connects without a code ----------
 const DEVS = [{ id: 'b1', name: 'Redmi Note 9', model: 'Xiaomi Redmi Note 9', last: Date.now() - 36e5, since: Date.now() - 9 * 864e5, via: 'wifi-direct' },
   { id: 'c1', name: 'מחשב העבודה', model: 'Windows', last: Date.now() - 864e5, since: Date.now() - 9 * 864e5, via: 'program' }];

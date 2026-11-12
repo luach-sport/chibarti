@@ -30,8 +30,13 @@
     lastSig = V.sig ? V.sig() : '';
     const changedScreen = name !== lastName;
     lastName = name;
-    CB.$('#composer-root').innerHTML = !v && ui.tab === 'text' ? CB.views.composer() : '';
-    if (!v && ui.tab === 'text' && CB.views.text.restoreDraft) CB.views.text.restoreDraft();
+    // the typing bar is kept when it's already there, so the keyboard doesn't close on every new message
+    const onText = !v && ui.tab === 'text';
+    if (onText && document.getElementById('composer')) CB.views.composerUpdate();
+    else {
+      CB.$('#composer-root').innerHTML = onText ? CB.views.composer() : '';
+      if (onText && CB.views.text.restoreDraft) CB.views.text.restoreDraft();
+    }
     document.querySelectorAll('#tabs button[data-tab]').forEach((b) => {
       if (b.getAttribute('data-tab') === ui.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });

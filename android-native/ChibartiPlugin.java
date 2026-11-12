@@ -118,6 +118,25 @@ public class ChibartiPlugin extends Plugin {
     }
 
     @PluginMethod public void cancelKnown(PluginCall call) { hub.connect.joiner.cancelKnown(); call.resolve(); }
+
+    /** The connection log (Settings → יומן חיבור). */
+    @PluginMethod public void diag(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("text", Diag.text());
+        r.put("device", Build.MANUFACTURER + " " + Build.MODEL + " · Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+        call.resolve(r);
+    }
+
+    @PluginMethod public void diagClear(PluginCall call) { Diag.clear(); call.resolve(); }
+
+    /** Plain text to another app (the log to WhatsApp, e-mail…). */
+    @PluginMethod public void shareText(PluginCall call) {
+        try {
+            Intent i = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, call.getString("text", ""));
+            ctx().startActivity(Intent.createChooser(i, call.getString("title", "שיתוף")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            call.resolve();
+        } catch (Exception e) { call.reject("cant-share"); }
+    }
     @PluginMethod public void scan(PluginCall call) { hub.connect.joiner.scan(); call.resolve(); }
     @PluginMethod public void stopScan(PluginCall call) { hub.connect.joiner.stopScan(); call.resolve(); }
     @PluginMethod public void connectPeer(PluginCall call) {
@@ -133,7 +152,8 @@ public class ChibartiPlugin extends Plugin {
     // ---------- text ----------
     @PluginMethod public void sendText(PluginCall call) {
         if (!hub.connected()) { call.reject("not-connected"); return; }
-        hub.sendText(call.getString("text", ""));
+        JSObject r = call.getObject("reply");
+        hub.sendText(call.getString("text", ""), r == null ? null : r);
         call.resolve();
     }
 
@@ -335,6 +355,7 @@ public class ChibartiPlugin extends Plugin {
     @PluginMethod public void controlStop(PluginCall call) { hub.control.stop(true); call.resolve(); }
     @PluginMethod public void controlSettings(PluginCall call) { hub.control.openSettings(); call.resolve(); }
     @PluginMethod public void controlPlayProtect(PluginCall call) { ControlLink.openPlayProtect(getContext()); call.resolve(); }
+    @PluginMethod public void controlAppInfo(PluginCall call) { ControlLink.openAppInfo(getContext()); call.resolve(); }
 
     // ---------- the phone: permissions, Wi-Fi, location, battery ----------
     private boolean granted(String p) { return ctx().checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED; }
@@ -346,6 +367,7 @@ public class ChibartiPlugin extends Plugin {
         r.put("sdk", sdk);
         r.put("release", Build.VERSION.RELEASE);
         r.put("model", Build.MODEL);
+        r.put("brand", Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase(java.util.Locale.ROOT));
         r.put("p2p", hub.connect.p2p.supported());
         r.put("camera", ctx().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY));
         r.put("audioCapture", sdk >= 29);

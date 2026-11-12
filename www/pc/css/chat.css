@@ -16,3 +16,21 @@
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2 11 13M22 2l-7 20-4-9-9-4Z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2 11 13M22 2l-7 20-4-9-9-4Z'/%3E%3C/svg%3E") center / contain no-repeat;
   transform: scaleX(-1); }
+
+/* answering a message */
+.bubble .rep { position: absolute; top: 4px; right: -34px; width: 28px; height: 28px; border-radius: 14px; border: 0; background: var(--inset); color: var(--muted); display: flex; align-items: center; justify-content: center; opacity: 0; cursor: pointer; transition: opacity .12s; }
+.bubble.theirs .rep { right: auto; left: -34px; }
+.bubble:hover .rep, .bubble .rep:focus-visible { opacity: 1; }
+.bubble .rep .i { width: 16px; height: 16px; }
+.bubble.flash { animation: msgflash 1.4s ease-out; }
+@keyframes msgflash { 0%, 55% { filter: brightness(.82); } 100% { filter: none; } }
+.quote { display: block; width: 100%; text-align: right; border: 0; border-right: 3px solid currentColor; background: rgba(0, 0, 0, .07); border-radius: 8px; padding: 4px 9px; margin: 0 0 6px; color: inherit; font: inherit; font-size: 12.5px; cursor: pointer; }
+.bubble.mine .quote { background: rgba(255, 255, 255, .18); }
+.quote b { display: block; font-size: 12px; }
+.quote span { display: block; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-bar { display: flex; align-items: center; gap: 8px; padding: 8px 18px 0; }
+.reply-bar:empty { display: none; }
+.reply-bar .grow { flex: 1; min-width: 0; border-right: 3px solid var(--primary); padding: 2px 10px; font-size: 13px; }
+.reply-bar .grow b { display: block; color: var(--primary-text); }
+.reply-bar .grow span { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-bar .x { width: 32px; height: 32px; border-radius: 16px; border: 0; background: var(--inset); cursor: pointer; }

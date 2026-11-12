@@ -18,3 +18,17 @@
   .sheet { border-radius: 26px; margin-bottom: 24px; }
   .sheet-foot { margin-bottom: -22px; }
 }
+
+/* a step-by-step guide inside a sheet (remote-control add-on) */
+.guide { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 14px; }
+.guide .g { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 16px; background: var(--surface); border: 1.5px solid var(--line); }
+.guide .g.now { border-color: var(--primary); }
+.guide .g.done { opacity: .62; }
+.guide .n { width: 26px; height: 26px; border-radius: 13px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--primary-soft); color: var(--primary-text); font-weight: 700; font-size: 13px; }
+.guide .g.done .n { background: var(--green-soft); color: var(--green-text); }
+.guide .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide .t { font-weight: 700; font-size: 14.5px; }
+.guide .s { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.guide .btn.small { align-self: flex-start; min-height: 40px; }
+.guide .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-row.one { grid-template-columns: 1fr; }

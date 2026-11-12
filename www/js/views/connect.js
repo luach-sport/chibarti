@@ -42,6 +42,7 @@
         '<span class="n">3</span><span>כאן מאשרים את החיבור, וזהו</span></div></div>';
       if (h.error && !h.ready) x += '<button type="button" class="btn" data-action="host-retry">' + icon('refresh') + 'לנסות שוב</button>';
       x += '<p class="fine" style="text-align:center">הקוד משתנה כל 10 דקות ואחרי כל חיבור. בלי אישור שלך אף טלפון לא מתחבר.</p>';
+      if (ready && h.method === 'd') x += '<p class="fine" style="text-align:center">אם קופצת כאן הודעה של אנדרואיד "הזמנה להתחבר", מאשרים אותה.</p>';
       return x;
     },
     sig: () => { const h = CB.L().host || {}; return [h.ready, h.qr, h.error, h.method, CB.L().mode].join('|'); },

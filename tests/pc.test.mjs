@@ -66,6 +66,20 @@ await step('a message goes to the phone and the answer comes back', async () => 
   await page.waitForSelector('.bubble.theirs');
   ok((await page.textContent('.bubble.theirs')).includes('קיבלתי'), 'no echo');
   ok(await page.$('.bubble.mine a[href="https://example.com"]'), 'link not clickable');
+  ok((await page.textContent('.bubble.theirs .quote')).includes('שלום מהמחשב'), 'the answer does not show the quoted message');
+});
+
+await step('answering a message quotes it (↩ on the message)', async () => {
+  await page.hover('.bubble.theirs');
+  await page.click('.bubble.theirs .rep');
+  await page.waitForSelector('#replyBar .grow');
+  ok((await page.textContent('#replyBar')).includes('קיבלתי'), 'no "answering" bar');
+  await page.fill('#say', 'תשובה עם ציטוט');
+  await page.press('#say', 'Enter');
+  const r = await expect(/^REPLY abc123 /);
+  ok(r.includes('קיבלתי'), r);
+  ok((await page.textContent('#replyBar')) === '', 'the bar stays after sending');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.bubble.mine')].some((b) => b.textContent.includes('תשובה עם ציטוט') && b.querySelector('.quote') && b.querySelector('.quote').textContent.includes('קיבלתי'))), 'my message does not show the quote');
 });
 
 await step('a 3 MB file goes to the phone and is checked there', async () => {

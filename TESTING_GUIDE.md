@@ -27,6 +27,7 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] A: approval sheet shows B's name → "אישור" → both Homes show "מחובר ל-…", via Wi-Fi Direct, quality bars.
 - [ ] Decline on A → B shows "הטלפון השני לא אישר". No answer for 60 s → "לא התקבל אישור בזמן".
 - [ ] Nearby list: B "חיפוש טלפונים בסביבה" → A appears → type the 6 digits → connects (no "invitation" dialog on A; B may ask once to join A's network). Wrong digits → "הקוד שגוי" at once.
+- [ ] Anything above fails → Settings → יומן חיבור on both phones → "שליחה למפתח" (shows where it stopped: announcement made? found? network joined?).
 - [ ] Home on B (not connected) → מכשירים מוכרים → "התחברות" next to A → "מחפש את…"; A taps "התחלת חיבור" → connected, no code, no approval. Not found in 2 minutes → a message.
 - [ ] "לזכור את הטלפון" kept on → disconnect → A starts again → B picks A from the list → connects **without** a code and without approval.
 - [ ] Settings → מכשירים מוכרים → "שכחה" → next time a code is needed again.
@@ -76,6 +77,8 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] Send Hebrew, English, a link, multi-line text → appear on the other phone; "העתקה" puts it on the clipboard.
 - [ ] "הדבקה" reads the clipboard only when pressed. A message arriving while typing doesn't clear the draft.
 - [ ] App in background → a notification shows the message.
+- [ ] Drag a message to the left → "בתגובה ל…" above the typing bar; send → both phones show the quote; tap it → jumps to the original.
+- [ ] Type a word with the keyboard's suggestions on, send → the box stays empty (the word doesn't come back) and the keyboard stays open.
 
 ### General
 - [ ] Light/dark/system theme; Hebrew RTL everywhere; small phone (≤ 360 dp wide) and a tablet.
@@ -105,6 +108,7 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 
 ### Remote control
 - [ ] Updating the app itself (1.1 → 1.3) is not blocked by Play Protect (the app has no accessibility service).
+- [ ] First control request on a phone without the add-on (Android 13+): the guide shows 3 steps; "פתיחת Play Protect" marks step 1; after installing, the guide (or a popup, if the app was closed) asks to turn scanning back on; "הדף של התוסף" opens the add-on's page (⋮ → התרת הגדרות מוגבלות); "הגדרות הנגישות" → turn it on → the request goes through by itself.
 - [ ] Phone A shares, phone B watches → B taps ☝ "שליטה" → A: "לאפשר שליטה" → the add-on sheet → download chibarti-control.apk → install (if Play Protect blocks: Play Protect ⚙ → turn off "scan apps", install, turn it back on) → back to חיברתי: the sheet moves to "turn it on" → "הפעלה" opens the add-on's screen → Accessibility → "חיברתי – שליטה" on → back: B gets the answer by itself → B can tap, swipe, long-press, use ◁ ○ ▢, type with ⌨ (Hebrew too).
 - [ ] Android 13+ on A: if the switch is grey, the add-on's App info → ⋮ → "Allow restricted settings".
 - [ ] Computer watches a phone → "שליטה" → mouse click / drag / wheel / right click (back) / typing on the keyboard.

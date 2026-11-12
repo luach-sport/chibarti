@@ -13,3 +13,7 @@
 .about-head h2 { margin: 0; font-size: 24px; font-weight: 800; }
 .about-head .ver { color: var(--muted); font-size: 13px; }
 .note-list { margin: 0; padding: 0 18px 0 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+
+/* the connection log */
+.diag-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.diag-log { margin: 0; max-height: 62vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font: 11px/1.55 ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2); white-space: pre-wrap; word-break: break-word; text-align: left; }

@@ -9,7 +9,7 @@ mkdir -p "$WORK/out"
 if [ ! -d "$JSON/src/main/java/org/json" ]; then
   git clone -q --depth 1 https://github.com/stleary/JSON-java.git "$JSON"
 fi
-PURE="Link Crypto SecureLink Handshake Proto Pairing QrPayload OutgoingJob IncomingJob RateControl Tls WsLink WebServer Session NetSeal"
+PURE="Link Crypto SecureLink Handshake Proto Pairing QrPayload OutgoingJob IncomingJob RateControl Tls WsLink WebServer Session NetSeal Diag"
 SRC=()
 for c in $PURE; do SRC+=("$ROOT/android-native/$c.java"); done
 rm -rf "$WORK/out" && mkdir -p "$WORK/out"

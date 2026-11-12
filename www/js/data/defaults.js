@@ -18,6 +18,7 @@
     outbox: [],
     profile: { name: '', email: '' },
     updateSeen: 0,
-    readTexts: 0
+    readTexts: 0,
+    ppOff: false
   });
 })();

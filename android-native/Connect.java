@@ -85,7 +85,8 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         }
         joiner.stopScan();
         LinkService.start(ctx);
-        try { server.start(); } catch (Exception e) { hostFailed("server"); return; }
+        Diag.log("host", "start (Android " + Build.VERSION.RELEASE + ", " + Build.MODEL + ")");
+        try { server.start(); } catch (Exception e) { Diag.log("host", "server FAILED: " + Diag.why(e)); hostFailed("server"); return; }
         startWeb();
         hub.changed();
         if (!p2p.supported()) { tryHotspot("unsupported"); return; }
@@ -106,6 +107,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     }
 
     private void tryHotspot(final String why) {
+        Diag.log("host", "Wi-Fi Direct group not possible (" + why + "), trying a local hotspot");
         if (Build.VERSION.SDK_INT < 26) { lanOnly(why); return; }
         try {
             WifiManager wm = (WifiManager) ctx.getSystemService(Context.WIFI_SERVICE);
@@ -116,7 +118,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                     String[] sp = hotspotCredentials(r);
                     h.postDelayed(() -> ready("h", sp[0], sp[1]), 1200);
                 }
-                @Override public void onFailed(int reason) { lanOnly(why); }
+                @Override public void onFailed(int reason) { Diag.log("host", "hotspot FAILED: " + reason); lanOnly(why); }
             }, h);
         } catch (Exception e) { lanOnly(why); }
     }
@@ -136,6 +138,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
 
     private void lanOnly(String why) {
         List<String> a = NetUtil.addresses();
+        Diag.log("host", "only the shared Wi-Fi: " + a);
         if (a.isEmpty()) { hostFailed("no-network:" + why); return; }
         synchronized (this) { hostError = "lan-only:" + why; }
         ready("l", null, null);
@@ -151,6 +154,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             if ("d".equals(m)) { addresses.remove(WifiDirect.OWNER_IP); addresses.add(0, WifiDirect.OWNER_IP); }
             hostReady = true;
         }
+        Diag.log("host", "ready: " + ("d".equals(m) ? "Wi-Fi Direct" : "h".equals(m) ? "hotspot" : "shared Wi-Fi") + (name == null ? "" : " " + name) + ", addresses " + addresses + ", port " + server.port);
         String id = hub.ids.myId(), me = hub.ids.myName();
         advertisedPin = "";
         advertiseNet();
@@ -176,19 +180,21 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         final String id = hub.ids.myId(), me = hub.ids.myName();
         final int port = server.port;
         bg.execute(() -> {
-            Map<String, String> extra = new java.util.HashMap<>();
-            if (sid != null && !sid.isEmpty() && pw != null && !pw.isEmpty()) {
-                NetSeal.Net n = new NetSeal.Net(m, sid, pw);
-                extra.put("m", m);
-                extra.put("w", NetSeal.seal(NetSeal.pinKey(pin, id), n));
-                extra.put("r", NetSeal.seal(hub.ids.netKey(), n));
-                if ("h".equals(m) && addrs != null) {
-                    StringBuilder a = new StringBuilder();
-                    for (int i = 0; i < addrs.size() && i < 3; i++) a.append(i > 0 ? "," : "").append(addrs.get(i));
-                    extra.put("a", a.toString());
-                }
-            }
-            h.post(() -> { if (hosting && pin.equals(advertisedPin)) p2p.advertise(id, me, port, extra); });
+            Map<String, String> net = new java.util.HashMap<>();
+            try {
+                if (sid != null && !sid.isEmpty() && pw != null && !pw.isEmpty()) {
+                    net.put("s", NetSeal.txtSafe(sid));
+                    net.put("m", m);
+                    net.put("w", NetSeal.seal(NetSeal.pinKey(pin, id), m, sid, pw));
+                    net.put("r", NetSeal.seal(hub.ids.netKey(), m, sid, pw));
+                    if ("h".equals(m) && addrs != null && !addrs.isEmpty()) {
+                        StringBuilder a = new StringBuilder();
+                        for (int i = 0; i < addrs.size() && i < 3; i++) a.append(i > 0 ? "," : "").append(addrs.get(i));
+                        net.put("a", NetSeal.txtSafe(a.toString()));
+                    }
+                } else Diag.log("host", "no network name/password to announce");
+            } catch (Exception e) { Diag.log("host", "sealing failed: " + Diag.why(e)); net.clear(); }
+            h.post(() -> { if (hosting && pin.equals(advertisedPin)) p2p.advertise(id, me, port, net); });
         });
     }
 
@@ -333,6 +339,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 return Handshake.ERR_UNKNOWN;
             }
             @Override public void failed(int mode, String clientId) {
+                Diag.log("host", "a phone tried a wrong " + (mode == Handshake.MODE_PIN ? "code" : mode == Handshake.MODE_TRUSTED ? "remembered key" : "secret (mode " + mode + ")"));
                 Pairing p = pairing;
                 if (mode == Handshake.MODE_PIN && p != null && p.failed()) { hub.notice("pin-renewed", null); hub.changed(); }
             }
@@ -350,6 +357,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 if (cur != null && cur.peerId.equals(r.peerId)) { cur.attachStream(r.link); hub.mirror.onStreamAttached(); } else r.link.close();
                 return;
             }
+            Diag.log("host", "secure connection from " + ip + " (" + modeName(r.mode) + ")");
             r.link.setReadTimeout(15000);
             Link.Frame f = r.link.read();
             r.link.setReadTimeout(0);
@@ -359,7 +367,19 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             String via = ip != null && ip.startsWith("192.168.49.") ? "wifi-direct" : "h".equals(method) ? "hotspot" : "wifi";
             approveAndAttach(r.link, r.peerId, r.mode, name, model, hello.optInt("sdk"), via, "phone", ip);
         } catch (Exception e) {
+            Diag.log("host", "connection dropped before approval: " + Diag.why(e));
             r.link.close();
+        }
+    }
+
+    static String modeName(int m) {
+        switch (m) {
+            case Handshake.MODE_QR: return "QR";
+            case Handshake.MODE_PIN: return "code";
+            case Handshake.MODE_TRUSTED: return "remembered";
+            case Handshake.MODE_RESUME: return "resume";
+            case Handshake.MODE_STREAM: return "screen stream";
+            default: return "mode " + m;
         }
     }
 
@@ -433,7 +453,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             synchronized (this) { requests.remove(req.rid); }
             LinkService.askDone(ctx);
             hub.changed();
-            if (!answered || !req.allow) { deny(link, answered ? "declined" : "timeout"); return; }
+            if (!answered || !req.allow) { Diag.log("host", name + ": " + (answered ? "declined" : "no answer in time")); deny(link, answered ? "declined" : "timeout"); return; }
             remember = req.remember;
             Pairing p = pairing;
             if (p != null) p.consumed();
@@ -444,6 +464,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         JSONObject ok = new JSONObject().put("key", Crypto.b64(key)).put("pair", pair == null ? "" : Crypto.b64(pair))
             .put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1).put("id", hub.ids.myId());
         link.send(Proto.APPROVED, Proto.json(ok));
+        Diag.log("host", "connected: " + name + " (" + via + (mode == Handshake.MODE_TRUSTED ? ", remembered, no approval" : "") + ")");
         Session s = new Session(peerId, true, key, hub);
         s.peerName = name;
         s.peerModel = model;
@@ -455,6 +476,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     }
 
     private void deny(Link link, String why) {
+        Diag.log("host", "refused: " + why);
         try { link.send(Proto.DENIED, Proto.json(new JSONObject().put("reason", why))); } catch (Exception ignored) { }
         link.close();
     }
