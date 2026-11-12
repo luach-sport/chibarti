@@ -13,7 +13,7 @@
     timeout: 'לא התקבל אישור בזמן. נסו שוב, ובטלפון השני לוחצים "אישור"',
     unreachable: 'לא הצלחתי להגיע לטלפון השני. קרבו את הטלפונים ונסו שוב',
     'lan-unreachable': 'שני הטלפונים צריכים להיות על אותה רשת Wi-Fi (גם בלי אינטרנט)',
-    'p2p-failed': 'החיבור הישיר (Wi-Fi Direct) לא הצליח. נסו בסריקת הקוד',
+    'p2p-failed': 'החיבור הישיר (Wi-Fi Direct) לא הצליח. קרבו את הטלפונים ונסו שוב, או סרקו את הקוד',
     'wifi-declined': 'לא אושר החיבור לרשת של הטלפון השני',
     'wrong-code': 'הקוד שגוי. בדקו את 6 הספרות שעל הטלפון השני',
     'need-pin': 'צריך את הקוד שמופיע בטלפון השני',
@@ -57,7 +57,8 @@
     'control-off': () => 'השליטה מרחוק הסתיימה',
     'mirror-stopped': () => 'הטלפון השני הפסיק לצפות',
     'capture-failed': () => 'אנדרואיד לא אישר צילום של המסך',
-    'host-failed': (d) => CB.hostError(d)
+    'host-failed': (d) => CB.hostError(d),
+    'known-not-found': (d) => (d || 'המכשיר') + ' לא נמצא. בטלפון השני לוחצים "התחלת חיבור" ומנסים שוב'
   };
 
   CB.onNotice = (code, detail) => {
@@ -67,7 +68,7 @@
       return;
     }
     const f = NOTE[code];
-    if (f) CB.toast(f(detail || ''), code === 'lost' || code === 'host-failed' ? 4200 : 2600);
+    if (f) CB.toast(f(detail || ''), code === 'lost' || code === 'host-failed' || code === 'known-not-found' ? 4200 : 2600);
     if (code === 'received' || code === 'sent') { CB.ui.history = null; CB.haptic(true); }
   };
 })();

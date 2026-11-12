@@ -88,7 +88,31 @@ final class Ids {
     synchronized void forget(String id) {
         JSONObject all = trusted();
         all.remove(id);
-        p.edit().putString("trusted", all.toString()).apply();
+        // a forgotten phone must not open this phone's network either: a new key (the others get it on their next connection)
+        p.edit().putString("trusted", all.toString()).putString("net", Crypto.b64(Crypto.random(32))).apply();
+    }
+
+    /** This phone's key for its temporary network's seal (given to remembered phones; see NetSeal). */
+    synchronized byte[] netKey() {
+        String k = p.getString("net", "");
+        try { byte[] b = Crypto.unb64(k); if (b.length == 32) return b; } catch (Exception ignored) { }
+        byte[] b = Crypto.random(32);
+        p.edit().putString("net", Crypto.b64(b)).apply();
+        return b;
+    }
+
+    /** A remembered phone's network key (null when it hasn't sent one yet). */
+    synchronized byte[] peerNet(String id) {
+        JSONObject t = id == null ? null : trusted().optJSONObject(id);
+        if (t == null || t.optString("net").isEmpty()) return null;
+        try { return Crypto.unb64(t.optString("net")); } catch (Exception e) { return null; }
+    }
+
+    synchronized void saveNet(String id, byte[] key) {
+        JSONObject all = trusted();
+        JSONObject t = all.optJSONObject(id);
+        if (t == null || key == null || key.length != 32) return;
+        try { t.put("net", Crypto.b64(key)); p.edit().putString("trusted", all.toString()).apply(); } catch (Exception ignored) { }
     }
 
     /** The paired phones for the screen (without their keys). */

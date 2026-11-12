@@ -11,6 +11,8 @@ final class Proto {
 
     // control (JSON body)
     static final int HELLO = 1, APPROVED = 2, DENIED = 3, PING = 4, PONG = 5, BYE = 6;
+    // between two remembered phones: the key that opens this phone's temporary network next time (see NetSeal)
+    static final int NET_KEY = 8;
     static final int TEXT = 10;
     static final int OFFER = 20, OFFER_REPLY = 21, CHUNK = 22, FILE_END = 23, FILE_ACK = 24, CANCEL = 25, PAUSE = 26, RESUME = 27;
     static final int MIRROR_OFFER = 30, MIRROR_REPLY = 31, MIRROR_STOP = 32, KEY_REQUEST = 33, MIRROR_STATS = 34;

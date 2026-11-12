@@ -409,6 +409,8 @@ public class ChibartiTests {
             } finally { w.stop(); }
         });
 
+        SessionTests.run();
+
         System.out.println(passed + " passed, " + failed + " failed");
         if (failed > 0) System.exit(1);
     }

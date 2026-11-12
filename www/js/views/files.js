@@ -62,12 +62,11 @@
     const L = CB.L(), env = ui.env || {};
     const incoming = (L.transfers || []).filter((t) => t.dir === 'in' && CB.isActive(t));
     const got = (ui.history || []).filter((h) => h.dir === 'in' && h.status === 'done').slice().reverse();
-    const where = env.folder ? 'בתיקייה שבחרת: ' + (env.folderName || '') : 'תמונות ב-Pictures/Chibarti, סרטונים ב-Movies/Chibarti, וכל השאר ב-Download/Chibarti';
-    let h = '<div class="notice gray">' + icon('folder', 'sm') + '<span class="grow">' + esc(where) + '</span></div>';
+    let h = '<div class="notice gray">' + icon('folder', 'sm') + '<span class="grow">' + esc(CB.saveWhereText(env)) + '</span><button type="button" class="link" data-action="save-where">שינוי</button></div>';
     h += incoming.map((t) => V.xferCard(t, false)).join('');
     if (!got.length && !incoming.length) return h + '<div class="empty">' + CB.emptyArt() + '<h2>עוד לא התקבלו קבצים</h2><p>כשהטלפון השני ישלח, תופיע כאן בקשה לאישור, והקבצים יישמרו בטלפון.</p></div>';
     h += '<div class="card list">' + got.slice(0, 60).map(V.histRow).join('') + '</div>';
-    return h + '<button type="button" class="btn secondary" data-action="open-downloads">' + icon('folder') + 'פתיחת תיקיית ההורדות</button>';
+    return h + '<button type="button" class="btn secondary" data-action="open-downloads">' + icon('folder') + (env.saveMode === 'folder' && env.folder ? 'פתיחת התיקייה' : 'פתיחת תיקיית ההורדות') + '</button>';
   }
 
   function historySeg() {
@@ -97,7 +96,7 @@
     after: () => { CB.loadThumbs(CB.$('#screen')); if (!ui.history) CB.loadHistory(); },
     sig: () => {
       const L = CB.L();
-      return [ui.filesSeg, CB.connected(), (L.transfers || []).map((t) => t.tid + t.state + (t.peerPaused ? 'p' : '')).join(','), (ui.history || []).length, ui.histFilter, ui.env && ui.env.folder].join('|');
+      return [ui.filesSeg, CB.connected(), (L.transfers || []).map((t) => t.tid + t.state + (t.peerPaused ? 'p' : '')).join(','), (ui.history || []).length, ui.histFilter, ui.env && ui.env.folder, ui.env && ui.env.saveMode].join('|');
     },
     live: () => { (CB.L().transfers || []).forEach(V.xferLive); }
   };

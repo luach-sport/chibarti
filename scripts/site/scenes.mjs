@@ -34,8 +34,12 @@ const HISTORY = `K.ui.history = [
   { id: 'h4', dir: 'in', name: 'תמונות טיול.zip', mime: 'application/zip', size: 312000000, status: 'done', peer: 'Redmi Note 9', at: Date.now() - 3 * 3600e3, uri: 'x4' },
   { id: 'h5', dir: 'in', name: 'מצגת לכנס.pptx', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', size: 15400000, status: 'done', peer: 'Redmi Note 9', at: Date.now() - 40 * 60e3, uri: 'x5' }];`;
 const MEDIA = `K.ui.media = { items: [1, 2, 3, 4, 5, 6].map((i) => ({ uri: 'sim://p' + i, name: 'IMG_' + i + '.jpg', size: 2400000 + i * 310000, mime: i === 3 ? 'video/mp4' : 'image/jpeg' })), sel: { 'sim://p1': true, 'sim://p2': true, 'sim://p4': true, 'sim://p5': true } };`;
+const KNOWN = `K.sim.set({ devices: [
+  { id: 'b1', name: 'Redmi Note 9', model: 'Xiaomi Redmi Note 9', last: Date.now() - 3 * 3600e3, since: Date.now() - 9 * 864e5, via: 'wifi-direct' },
+  { id: 'b3', name: 'הטאבלט של אבא', model: 'Galaxy Tab A7', last: Date.now() - 2 * 864e5, since: Date.now() - 30 * 864e5, via: 'hotspot' },
+  { id: 'c1', name: 'מחשב העבודה', model: 'Windows', last: Date.now() - 864e5, since: Date.now() - 12 * 864e5, via: 'program' }] });`;
 const ENV = `K.sim.S.env = { sdk: 33, release: '13', model: 'Galaxy A54', p2p: true, camera: true, audioCapture: true, wifiOn: true, locationOn: true, locationNeeded: false,
-  perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: '', folderName: '' };`;
+  perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: '', folderName: '', saveMode: 'auto' };`;
 
 // This phone shares its screen with the computer (for the remote-control scenes)
 const SHARING_TO_PC = `K.sim.set({ mode: 'connected', host: { on: false }, devices: [],
@@ -115,6 +119,9 @@ export const SCENES = [
     { id: '4', text: 'תודה! התחברתי', ts: Date.now() - 60000, mine: false, peer: 'Redmi Note 9' }];
     K.sim.set({ textCount: 4 }); ui.tab = 'text'; K.render();`),
   scene('settings', CONNECTED + ENV + " ui.tab = 'settings'; K.render();", { wait: 800 }),
+  scene('known', KNOWN + " K.render();", { wait: 500 }),
+  scene('devices', KNOWN + " K.pushView({ name: 'devices' });", { wait: 600 }),
+  scene('save-where', ENV + " ui.tab = 'settings'; K.loadEnv().then(() => { K.render(); K.openSheet('saveWhere'); });", { wait: 800 }),
   scene('pc', ENV + " K.A.pc();", { wait: 900 }),
   scene('control-ask', SHARING_TO_PC + " K.sim.set({ control: { role: 'asked', error: '', service: false, can: true } });", { wait: 900 }),
   scene('control-setup', SHARING_TO_PC + " K.sim.set({ control: { role: 'setup', error: '', service: false, can: true } });", { wait: 900 }),

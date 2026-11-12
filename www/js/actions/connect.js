@@ -114,6 +114,18 @@
   };
 
   A['cancel-join'] = () => CB.N.call('cancelJoin');
+
+  // A remembered phone: look for it and connect without a code (on the other phone: "Start a connection").
+  A['known-connect'] = async (el) => {
+    if (CB.connected()) { CB.toast('כבר מחובר. קודם מנתקים'); return; }
+    const r = await CB.N.call('connectKnown', { id: el.dataset.id }).catch(() => ({ error: 'unreachable' }));
+    if (r && r.error) { CB.toast(CB.joinError(r.error), 4200); return; }
+    CB.haptic();
+    ui.stack = [];
+    ui.tab = 'home';
+    CB.render();
+  };
+  A['known-cancel'] = () => CB.N.call('cancelKnown');
   A.disconnect = () => CB.confirm('ניתוק', 'לנתק את החיבור עם ' + CB.peerName() + '? העברות שעוד לא הסתיימו ייעצרו.', 'ניתוק', () => CB.N.call('disconnect'), true);
   A.forget = (el) => CB.confirm('שכחת המכשיר', 'לשכוח את ' + (el.dataset.name || 'המכשיר') + '? בפעם הבאה צריך קוד ואישור.', 'שכחה', () => CB.N.call('forget', { id: el.dataset.id }), true);
 

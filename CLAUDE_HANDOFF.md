@@ -29,9 +29,9 @@ www/ (UI, window.CB)                      android-native/ (Java, package com.lua
  link/bridge.js  CB.N.call / CB.N.on  ⇄  ChibartiPlugin  (Capacitor plugin "Chibarti"; events: state, notice, text, link)
  link/live.js    CB.live snapshot     ⇠  Hub             (one session; snapshot() at ≤6/s; notices)
                                            ├ Connect      host side: Wi-Fi Direct group → LocalOnlyHotspot → LAN; Server; approvals
-                                           │  ├ Joiner    join from QR (LAN first, P2P join API29+, WifiJoin legacy/specifier), nearby list, reconnect, stream link
+                                           │  ├ Joiner    join from QR or a sealed nearby announcement (NetSeal: code / remembered key) — LAN first, P2P join API29+, WifiJoin legacy/specifier; nearby list, "connect to a remembered phone", reconnect, stream link
                                            │  ├ WifiDirect, WifiJoin, LanBeacon (UDP 47820), Server (TCP 47821), Pairing, QrPayload
-                                           ├ Session      main SecureLink (control before bulk, 8-chunk bulk window), ping/RTT, resume
+                                           ├ Session      main SecureLink (control before bulk, 8-chunk bulk window; FILE_END goes in the bulk line), ping/RTT, resume
                                            ├ Transfers    OutgoingJob / IncomingJob (64 KB chunks, SHA-256, pause, cancel, resume offsets), Saver, History
                                            └ Mirror       ScreenSender (MediaProjection → VirtualDisplay → VideoEncoder H.264 → queue → stream link,
                                                           RateControl, rotation), AudioSender (AAC, API 29+);

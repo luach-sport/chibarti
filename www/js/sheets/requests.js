@@ -33,6 +33,7 @@
         '<div class="card list offer-list">' + o.files.map((f) => '<div class="row">' + CB.tile(f.mime, f.name) + '<span class="grow"><span class="t"><bdi>' + esc(f.name) + '</bdi></span><span class="s num">' + (f.size >= 0 ? CB.bytes(f.size) : '') + '</span></span></div>').join('') + '</div>' +
         (apk ? '<div class="notice warn">' + icon('apk', 'sm') + '<span class="grow">יש כאן קובץ התקנה (APK). הוא רק יישמר בתיקיית ההורדות, לא יותקן. מתקינים רק ממי שסומכים עליו.</span></div>' : '') +
         (room ? '' : '<div class="notice warn">' + icon('alert', 'sm') + '<span class="grow">אין מספיק מקום בטלפון. מפנים מקום ומבקשים לשלוח שוב.</span></div>') +
+        '<div class="notice gray">' + icon('folder', 'sm') + '<span class="grow">יישמר ' + esc(CB.saveWhereText(ui.env, true)) + '</span><button type="button" class="link" data-action="save-where" data-tid="' + o.tid + '">שינוי</button></div>' +
         '<div class="btn-row"><button type="button" class="btn secondary" data-action="offer-answer" data-accept="0">לא עכשיו</button><button type="button" class="btn" data-action="offer-answer" data-accept="1"' + (room ? '' : ' aria-disabled="true"') + '>' + icon('download') + 'קבלה</button></div>';
     }
   };

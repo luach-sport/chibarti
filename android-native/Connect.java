@@ -51,6 +51,8 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     private volatile long claimUntil;
     private static final int MODE_CLAIM = 99;
     private volatile Pairing pairing;
+    private volatile String advertisedPin = "";
+    private final java.util.concurrent.ExecutorService bg = java.util.concurrent.Executors.newSingleThreadExecutor();
     private String method = "l", ssid, pass, hostError;
     private List<String> addresses;
     private Object hotspot; // WifiManager.LocalOnlyHotspotReservation (Android 8+)
@@ -92,14 +94,15 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             if (ok) { ready("d", name, password); return; }
             tryHotspot(WifiDirect.reason(reason));
         });
-        h.postDelayed(this::refreshCode, 30000);
+        h.postDelayed(this::refreshCode, 5000);
     }
 
     private void refreshCode() {
         if (!hosting) return;
         Pairing p = pairing;
         if (p != null && p.refreshIfExpired()) hub.changed();
-        h.postDelayed(this::refreshCode, 30000);
+        if (p != null && !p.pin().equals(advertisedPin)) advertiseNet();
+        h.postDelayed(this::refreshCode, 5000);
     }
 
     private void tryHotspot(final String why) {
@@ -149,9 +152,44 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             hostReady = true;
         }
         String id = hub.ids.myId(), me = hub.ids.myName();
-        if ("d".equals(m)) p2p.advertise(id, me, server.port);
+        advertisedPin = "";
+        advertiseNet();
         beacon.startSending(id, me, server.port);
         hub.changed();
+    }
+
+    /**
+     * The Wi-Fi Direct announcement, with this phone's network sealed twice (NetSeal): with the 6-digit code and with
+     * the key of the remembered phones. A phone that picks this one from its nearby list then joins the network like
+     * after scanning the QR code, without Android's "invitation" dialog. Made again whenever the code changes.
+     */
+    private void advertiseNet() {
+        final Pairing p = pairing;
+        if (!hosting || !hostReady || p == null || !p2p.supported()) return;
+        final String pin = p.pin();
+        if (pin.equals(advertisedPin)) return;
+        advertisedPin = pin;
+        final String m, sid, pw;
+        final List<String> addrs;
+        synchronized (this) { m = method; sid = ssid; pw = pass; addrs = addresses; }
+        if (!"d".equals(m) && !"h".equals(m)) return; // on a shared Wi-Fi the LAN announcement is enough
+        final String id = hub.ids.myId(), me = hub.ids.myName();
+        final int port = server.port;
+        bg.execute(() -> {
+            Map<String, String> extra = new java.util.HashMap<>();
+            if (sid != null && !sid.isEmpty() && pw != null && !pw.isEmpty()) {
+                NetSeal.Net n = new NetSeal.Net(m, sid, pw);
+                extra.put("m", m);
+                extra.put("w", NetSeal.seal(NetSeal.pinKey(pin, id), n));
+                extra.put("r", NetSeal.seal(hub.ids.netKey(), n));
+                if ("h".equals(m) && addrs != null) {
+                    StringBuilder a = new StringBuilder();
+                    for (int i = 0; i < addrs.size() && i < 3; i++) a.append(i > 0 ? "," : "").append(addrs.get(i));
+                    extra.put("a", a.toString());
+                }
+            }
+            h.post(() -> { if (hosting && pin.equals(advertisedPin)) p2p.advertise(id, me, port, extra); });
+        });
     }
 
     private void hostFailed(String why) {
@@ -451,7 +489,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     }
 
     // ---------- WifiDirect.Events ----------
-    @Override public void onPeers() { hub.changed(); }
+    @Override public void onPeers() { joiner.checkWanted(); hub.changed(); }
 
     @Override public void onConnection(boolean connected, String ownerIp, boolean iAmOwner) { joiner.onP2pConnection(connected, ownerIp, iAmOwner); }
 

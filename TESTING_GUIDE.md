@@ -26,7 +26,8 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] Android 10+ on B may show "Connect to device?" — accept. Android 6–9 on B joins silently.
 - [ ] A: approval sheet shows B's name → "אישור" → both Homes show "מחובר ל-…", via Wi-Fi Direct, quality bars.
 - [ ] Decline on A → B shows "הטלפון השני לא אישר". No answer for 60 s → "לא התקבל אישור בזמן".
-- [ ] Nearby list: B "חיפוש טלפונים בסביבה" → A appears → type the 6 digits → connects. Wrong digits → "הקוד שגוי"; 5 wrong tries renew the code on A.
+- [ ] Nearby list: B "חיפוש טלפונים בסביבה" → A appears → type the 6 digits → connects (no "invitation" dialog on A; B may ask once to join A's network). Wrong digits → "הקוד שגוי" at once.
+- [ ] Home on B (not connected) → מכשירים מוכרים → "התחברות" next to A → "מחפש את…"; A taps "התחלת חיבור" → connected, no code, no approval. Not found in 2 minutes → a message.
 - [ ] "לזכור את הטלפון" kept on → disconnect → A starts again → B picks A from the list → connects **without** a code and without approval.
 - [ ] Settings → מכשירים מוכרים → "שכחה" → next time a code is needed again.
 - [ ] Scan A's QR with B's **system camera** app → the link opens חיברתי and connects.
@@ -48,7 +49,8 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] Mid-transfer, break the connection for ~10 s → transfer continues from the same point after reconnect.
 - [ ] Same file sent twice → second copy saved as "name (1).ext".
 - [ ] Receiver with almost no free space → offer refused with "אין מספיק מקום".
-- [ ] Choose a custom folder in Settings (including an SD card) → files go there.
+- [ ] Settings → איפה לשמור: "הכל בתיקיית ההורדות" → a photo lands in Download/Chibarti. "תיקייה שאני בוחר" (also an SD card) → files go there. The approval sheet shows where, with "שינוי".
+- [ ] Android 9 ↔ Android 12, both directions: a video, an APK and a photo → "נבדק" on both; the sender shows the progress bar all the way.
 - [ ] Android 6–9 receiver → storage permission asked once, files saved in public folders.
 - [ ] Received APK is never installed automatically; "פתיחה" opens the Downloads app.
 

@@ -110,6 +110,14 @@ public class ChibartiPlugin extends Plugin {
     @PluginMethod public void pcReady(PluginCall call) { hub.connect.pcReady(call.getBoolean("on", false)); call.resolve(); }
     @PluginMethod public void join(PluginCall call) { String e = hub.connect.joiner.joinQr(call.getString("qr", "")); call.resolve(one("error", e == null ? "" : e)); }
     @PluginMethod public void cancelJoin(PluginCall call) { hub.connect.joiner.cancel(); call.resolve(); }
+
+    /** A remembered phone: look for it and connect without a code once it offers a connection. */
+    @PluginMethod public void connectKnown(PluginCall call) {
+        String e = hub.connect.joiner.connectKnown(call.getString("id", ""));
+        call.resolve(one("error", e == null ? "" : e));
+    }
+
+    @PluginMethod public void cancelKnown(PluginCall call) { hub.connect.joiner.cancelKnown(); call.resolve(); }
     @PluginMethod public void scan(PluginCall call) { hub.connect.joiner.scan(); call.resolve(); }
     @PluginMethod public void stopScan(PluginCall call) { hub.connect.joiner.stopScan(); call.resolve(); }
     @PluginMethod public void connectPeer(PluginCall call) {
@@ -261,16 +269,43 @@ public class ChibartiPlugin extends Plugin {
         String name = "";
         try { name = DocumentsContract.getTreeDocumentId(u); } catch (Exception ignored) { }
         hub.ids.setPref("folderName", name);
+        hub.ids.setPref("saveMode", "folder");
         JSObject r = new JSObject();
         r.put("uri", u.toString());
-        r.put("name", name);
+        r.put("name", Saver.folderLabel(name));
         call.resolve(r);
     }
 
     @PluginMethod public void setFolder(PluginCall call) {
         hub.ids.setPref("folder", call.getString("uri", ""));
-        if (call.getString("uri", "").isEmpty()) hub.ids.setPref("folderName", "");
+        if (call.getString("uri", "").isEmpty()) { hub.ids.setPref("folderName", ""); hub.ids.setPref("saveMode", "auto"); }
         call.resolve();
+    }
+
+    /** Where received files go: "auto" (by kind), "downloads" (all in Download/Chibarti) or "folder" (the picked one). */
+    @PluginMethod public void setSaveMode(PluginCall call) {
+        String m = call.getString("mode", "auto");
+        if (!"auto".equals(m) && !"downloads".equals(m) && !"folder".equals(m)) m = "auto";
+        if ("folder".equals(m) && hub.ids.pref("folder", "").isEmpty()) { call.reject("no-folder"); return; }
+        hub.ids.setPref("saveMode", m);
+        call.resolve(one("mode", m));
+    }
+
+    /** Opens the folder where received files go (the picked folder, or the downloads). */
+    @PluginMethod public void openFolder(PluginCall call) {
+        String tree = hub.ids.pref("folder", "");
+        if ("folder".equals(Saver.mode(hub.ids)) && !tree.isEmpty()) {
+            try {
+                Uri t = Uri.parse(tree);
+                Uri doc = DocumentsContract.buildDocumentUriUsingTree(t, DocumentsContract.getTreeDocumentId(t));
+                Intent i = new Intent(Intent.ACTION_VIEW).setDataAndType(doc, DocumentsContract.Document.MIME_TYPE_DIR)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                ctx().startActivity(i);
+                call.resolve();
+                return;
+            } catch (Exception ignored) { }
+        }
+        try { openDownloadsApp(); call.resolve(); } catch (Exception e) { call.reject("cant-open"); }
     }
 
     // ---------- screen ----------
@@ -336,7 +371,8 @@ public class ChibartiPlugin extends Plugin {
         try { battery = ((PowerManager) ctx().getSystemService(Context.POWER_SERVICE)).isIgnoringBatteryOptimizations(ctx().getPackageName()); } catch (Exception ignored) { }
         r.put("batteryFree", battery);
         r.put("folder", hub.ids.pref("folder", ""));
-        r.put("folderName", hub.ids.pref("folderName", ""));
+        r.put("folderName", Saver.folderLabel(hub.ids.pref("folderName", "")));
+        r.put("saveMode", Saver.mode(hub.ids));
         return r;
     }
 

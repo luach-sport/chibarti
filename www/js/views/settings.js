@@ -23,8 +23,7 @@
         '<div class="card" style="padding:0 14px">' + CB.toggleRow('toggle-audio', 'גם הקול', env.audioCapture === false ? 'אפשרי מאנדרואיד 10' : 'כשמשתפים מסך', env.audioCapture !== false && st.audio) +
         CB.toggleRow('toggle-auto', 'איכות אוטומטית', 'לפי החיבור בפועל', st.auto) + CB.toggleRow('toggle-haptics', 'רטט קל בלחיצות ובבקשות', '', st.haptics) + '</div>';
       h += '<span class="section-label">קבצים שמתקבלים</span><div class="card list">' +
-        CB.navRow('pick-folder', 'folder', 'איפה לשמור', env.folder ? 'בתיקייה: ' + (env.folderName || '') : 'אוטומטית לפי סוג: תמונות, סרטונים, מוזיקה והורדות') +
-        (env.folder ? CB.navRow('reset-folder', 'refresh', 'חזרה לשמירה האוטומטית', '') : '') + '</div>';
+        CB.navRow('save-where', 'folder', 'איפה לשמור', CB.saveWhereText(env)) + '</div>';
       h += '<span class="section-label">חיבור</span><div class="card list">' +
         CB.navRow('open-setup', miss ? 'alert' : 'shield', 'חיבור והרשאות', miss ? 'חסר משהו כדי להתחבר. לחיצה לתיקון' : 'הכל מוכן') +
         CB.navRow('open-sheet', 'lock', 'פרטיות ואבטחה', 'מוצפן, ישיר, בלי אינטרנט ובלי שרת', '', ' data-sheet="privacy"') +
@@ -54,18 +53,26 @@
     html: () => {
       const list = (CB.L().devices || []).slice().sort((a, b) => (b.last || 0) - (a.last || 0));
       let h = '<div class="bar-top"><button type="button" class="icon-btn" aria-label="חזרה" data-action="back">' + icon('back') + '</button><h1 class="grow">מכשירים מוכרים</h1></div>';
-      h += '<p class="fine" style="font-size:14px">טלפון שאישרת פעם אחת נשמר כאן עם מפתח סודי משלו. בפעם הבאה הוא מתחבר בלי קוד, כשאחד הטלפונים לוחץ "התחלת חיבור" והשני בוחר אותו מהרשימה. מחשב מוכר מתחבר בלי קוד כשכאן פותחים "חיבור למחשב".</p>';
+      h += '<p class="fine" style="font-size:14px">טלפון שאישרת פעם אחת נשמר כאן עם מפתח סודי משלו. בפעם הבאה: בטלפון אחד לוחצים "התחלת חיבור", ובשני לוחצים כאן "התחברות". בלי קוד ובלי אישור. מחשב מוכר מתחבר בלי קוד מתוכנת חיברתי.</p>';
       const link = CB.L().link;
       if (!list.length) return h + '<div class="empty">' + CB.emptyArt() + '<h2>עוד אין מכשירים מוכרים</h2><p>אחרי החיבור הראשון, אם משאירים את "לזכור את המכשיר", הוא יופיע כאן.</p></div>';
+      const busy = CB.connected();
       h += '<div class="card list">' + list.map((d) => {
-        const now = link && link.peerId === d.id;
-        return '<div class="row"><span class="tile' + (now ? ' ok' : '') + '">' + icon(d.via === 'pc' || d.via === 'program' ? 'monitor' : 'phone') + '</span><span class="grow"><span class="t">' + esc(d.name || (d.via === 'pc' || d.via === 'program' ? 'מחשב' : 'טלפון')) + (now ? ' <span class="badge green">מחובר עכשיו</span>' : '') + '</span>' +
-          '<span class="s">' + esc(d.model || '') + (d.last ? ' · חיבור אחרון: ' + esc(CB.ago(d.last)) : '') + (d.via ? ' · ' + esc(CB.viaLabel(d.via)) : '') + '</span></span>' +
-          (now ? '<button type="button" class="btn small secondary" data-action="disconnect">ניתוק</button>' : '<button type="button" class="btn small secondary" data-action="forget" data-id="' + esc(d.id) + '" data-name="' + esc(d.name) + '">שכחה</button>') + '</div>';
+        const now = link && link.peerId === d.id, pc = d.via === 'pc' || d.via === 'program';
+        let acts;
+        if (now) acts = '<button type="button" class="btn small secondary" data-action="disconnect">ניתוק</button>';
+        else {
+          acts = busy ? '' : pc ? '<button type="button" class="btn small" data-action="pc">' + icon('monitor', 'sm') + 'חיבור</button>'
+            : '<button type="button" class="btn small" data-action="known-connect" data-id="' + esc(d.id) + '">' + icon('link', 'sm') + 'התחברות</button>';
+          acts += '<button type="button" class="icon-btn" data-action="forget" data-id="' + esc(d.id) + '" data-name="' + esc(d.name) + '" aria-label="שכחה">' + icon('trash', 'sm') + '</button>';
+        }
+        return '<div class="row dev-row stack"><span class="tile' + (now ? ' ok' : '') + '">' + icon(pc ? 'monitor' : 'phone') + '</span><span class="grow"><span class="t">' + esc(d.name || (pc ? 'מחשב' : 'טלפון')) + (now ? ' <span class="badge green">מחובר עכשיו</span>' : '') + '</span>' +
+          '<span class="s">' + esc(d.model || '') + (d.last ? ' · חיבור אחרון: ' + esc(CB.ago(d.last)) : '') + '</span></span>' +
+          '<span class="acts">' + acts + '</span></div>';
       }).join('') + '</div>';
-      return h + '<p class="fine">"שכחה" מוחקת את המפתח של המכשיר. כדי להתחבר אליו שוב צריך קוד ואישור.</p>';
+      return h + '<p class="fine">"התחברות" מחפשת את הטלפון ומתחברת בלי קוד ובלי אישור, ברגע שבו לוחצים "התחלת חיבור". הפח מוחק את המפתח של המכשיר: כדי להתחבר אליו שוב צריך קוד ואישור.</p>';
     },
-    sig: () => JSON.stringify(CB.L().devices || []) + (CB.L().link ? CB.L().link.peerId : '')
+    sig: () => JSON.stringify(CB.L().devices || []) + (CB.L().link ? CB.L().link.peerId : '') + CB.connected()
   };
 
   // ---------- connection & permissions ----------

@@ -29,19 +29,19 @@
     control: { role: 'none', error: '', addon: false, service: false, can: true, url: '' },
     textCount: 0
   });
-  const S = { snap: base(), texts: [], history: [], env: null };
+  const S = { snap: base(), texts: [], history: [], env: null, folder: '', saveMode: 'auto' };
   const emit = (ev, data) => (listeners[ev] || []).forEach((cb) => { try { cb(data); } catch (e) { console.warn(e); } });
   const changed = () => emit('state', CB.copy(S.snap));
 
   const env = () => S.env || {
     sdk: 33, release: '13', model: 'Browser', p2p: true, camera: true, audioCapture: true, wifiOn: true, locationOn: true, locationNeeded: false,
-    perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: '', folderName: ''
+    perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: S.folder || '', folderName: S.folder ? 'Download/מהטלפון' : '', saveMode: S.saveMode || 'auto'
   };
 
   CB.sim = {
     S,
     set: (patch) => { Object.keys(patch).forEach((k) => { S.snap[k] = patch[k]; }); changed(); },
-    reset: () => { S.snap = base(); S.texts = []; S.history = []; changed(); },
+    reset: () => { S.snap = base(); S.texts = []; S.history = []; S.folder = ''; S.saveMode = 'auto'; changed(); },
     emit,
     call: (m, a) => {
       const s = S.snap;
@@ -77,7 +77,18 @@
           : [{ uri: 'sim://d1', name: 'חוזה שכירות.pdf', size: 845000, mime: 'application/pdf' }, { uri: 'sim://d2', name: 'תמונות טיול.zip', size: 312000000, mime: 'application/zip' }] };
         case 'thumb': return { data: '' };
         case 'sendFiles': return { tid: 1 };
-        case 'pickFolder': return { uri: '', name: '' };
+        case 'pickFolder': S.folder = 'content://sim/tree/primary%3ADownload%2F' + encodeURIComponent('מהטלפון'); S.saveMode = 'folder'; return { uri: S.folder, name: 'Download/מהטלפון' };
+        case 'setFolder': S.folder = a.uri || ''; if (!S.folder) S.saveMode = 'auto'; return {};
+        case 'setSaveMode': S.saveMode = a.mode; return { mode: a.mode };
+        case 'openFolder': case 'openDownloads': return {};
+        case 'connectKnown': {
+          const d = s.devices.filter((x) => x.id === a.id)[0];
+          if (!d) return { error: 'unknown' };
+          s.join = { on: false, step: '', name: '', error: '', want: { id: d.id, name: d.name, until: now() + 120e3 } };
+          s.scan.on = true;
+          changed(); return { error: '' };
+        }
+        case 'cancelKnown': s.join = base().join; s.scan.on = false; changed(); return {};
         case 'mirrorStart': return { ok: false };
         default: return {};
       }

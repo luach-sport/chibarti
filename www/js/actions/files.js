@@ -86,13 +86,33 @@
     } catch (e) { CB.toast('אין אפליקציה שפותחת את הקובץ הזה'); }
   };
   A['file-share'] = (el) => CB.N.call('share', { uri: el.dataset.uri, mime: el.dataset.mime }).catch(() => CB.toast('לא הצלחתי לשתף'));
-  A['open-downloads'] = () => CB.N.call('openDownloads').catch(() => CB.toast('לא הצלחתי לפתוח'));
+  A['open-downloads'] = () => CB.N.call('openFolder').catch(() => CB.N.call('openDownloads')).catch(() => CB.toast('לא הצלחתי לפתוח'));
 
   A['pick-folder'] = async () => {
     const r = await CB.N.call('pickFolder').catch(() => null);
-    if (r && r.uri) { await CB.loadEnv(); CB.toast('קבצים חדשים יישמרו בתיקייה שבחרת'); CB.render(true); }
+    if (r && r.uri) {
+      await CB.loadEnv();
+      CB.toast('קבצים חדשים יישמרו בתיקייה שבחרת');
+      if (ui.sheet) CB.renderSheet();
+      CB.render(true);
+    }
   };
   A['reset-folder'] = async () => { await CB.N.call('setFolder', { uri: '' }); await CB.loadEnv(); CB.render(true); };
+
+  // Where received files go: by kind, all in Download/Chibarti, or a picked folder (picks one the first time).
+  A['save-mode'] = async (el) => {
+    const v = el.dataset.v, e = ui.env || {};
+    if (v === 'folder' && !e.folder) { await A['pick-folder'](); return; }
+    await CB.N.call('setSaveMode', { mode: v }).catch(() => null);
+    await CB.loadEnv();
+    CB.haptic();
+    if (ui.sheet) CB.renderSheet();
+    CB.render(true);
+  };
+  A['save-where'] = (el) => {
+    ui.saveBack = el.dataset.tid ? +el.dataset.tid : null;
+    CB.openSheet('saveWhere');
+  };
 
   A['hist-filter'] = (el) => { ui.histFilter = el.dataset.v; CB.render(true); };
   A['hist-clear'] = () => CB.confirm('ניקוי ההיסטוריה', 'למחוק את רשימת ההעברות? הקבצים עצמם נשארים בטלפון.', 'ניקוי', async () => {

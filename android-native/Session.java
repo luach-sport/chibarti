@@ -1,13 +1,13 @@
 package com.luachsport.chibarti;
 
-import android.net.Network;
 import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayDeque;
 
 /**
  * The live connection to the other phone: one encrypted main connection (messages and files) and, while a screen is
- * shared, a second one for the video. Messages always go before file pieces, so a tap never waits behind a big file.
+ * shared, a second one for the video. Messages always go before file pieces, so a tap never waits behind a big file;
+ * a file's "finished" goes in line with its pieces (never ahead of them), so the other side checks the whole file.
  * A heartbeat every 2.5 s notices a dead connection within 10 s; then the phone that joined tries to reconnect for
  * 30 s with the session key (no new code, no approval), and transfers continue from where they stopped.
  */
@@ -31,7 +31,7 @@ final class Session {
     int peerSdk;
     String address;
     int port;
-    Network network;
+    Object network; // android.net.Network of the joined network (kept as Object so this class runs on a PC)
     volatile Link main, stream;
     String kind = "phone"; // "phone" or "pc" (a computer's browser)
     volatile int state = ACTIVE;
@@ -118,6 +118,9 @@ final class Session {
     void control(int type, JSONObject o) {
         synchronized (q) { ctl.add(new Object[] { type, Proto.json(o) }); q.notifyAll(); }
     }
+
+    /** A file's "finished": after its last piece, never before it. Throws when the connection dropped meanwhile. */
+    void bulkControl(int type, JSONObject o, int gen) throws IOException { bulk(type, Proto.json(o), gen); }
 
     /** A file piece. Waits while 8 pieces are queued (so memory stays small). Throws when the connection dropped. */
     void bulk(int type, byte[] body, int gen) throws IOException {

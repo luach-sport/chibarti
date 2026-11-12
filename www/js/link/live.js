@@ -4,7 +4,7 @@
   'use strict';
   const CB = window.CB;
   const ui = CB.ui;
-  const shown = { req: {}, offer: {}, mirror: false };
+  const shown = { req: {}, offer: {}, mirror: false, pinFor: {} };
   let prevMode = 'idle';
 
   CB.live = null;
@@ -50,6 +50,12 @@
       CB.openSheet('offer', { tid: off.tid });
     }
     if (CB.sheetIs('offer') && !(s.offers || []).some((o) => o.tid === ui.sheet.data.tid)) CB.closeSheet();
+    // 5) a remembered phone was found but its key changed (it was forgotten there): type its code once
+    const pf = s.join && s.join.pinFor;
+    if (pf && pf.key && !shown.pinFor[pf.key] && !ui.sheet) {
+      shown.pinFor[pf.key] = 1;
+      CB.openSheet('pin', { key: pf.key, name: pf.name });
+    }
   }
 
   function onState(s) {

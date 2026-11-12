@@ -29,11 +29,34 @@ final class Saver implements IncomingJob.Sinks {
     private final Context ctx;
     private final ContentResolver cr;
     private final String tree;
+    private final boolean allDownloads;
 
-    Saver(Context c, String treeUri) {
+    /** mode: "auto" (by kind), "downloads" (everything in Download/Chibarti) or "folder" (the folder the user picked). */
+    Saver(Context c, String mode, String treeUri) {
         ctx = c.getApplicationContext();
         cr = ctx.getContentResolver();
-        tree = treeUri == null || treeUri.isEmpty() ? null : treeUri;
+        tree = "folder".equals(mode) && treeUri != null && !treeUri.isEmpty() ? treeUri : null;
+        allDownloads = "downloads".equals(mode);
+    }
+
+    /** The setting, also for phones that picked a folder before there was a choice. */
+    static String mode(Ids ids) {
+        String m = ids.pref("saveMode", "");
+        if (m.isEmpty()) m = ids.pref("folder", "").isEmpty() ? "auto" : "folder";
+        if ("folder".equals(m) && ids.pref("folder", "").isEmpty()) m = "auto";
+        return m;
+    }
+
+    /** A folder's name for the screen: "primary:Download/Movies" → "Download/Movies", an SD card → "כרטיס זיכרון: …". */
+    static String folderLabel(String treeDocId) {
+        if (treeDocId == null || treeDocId.isEmpty()) return "";
+        int colon = treeDocId.indexOf(':');
+        if (colon < 0) return treeDocId;
+        String vol = treeDocId.substring(0, colon), path = treeDocId.substring(colon + 1);
+        if ("primary".equalsIgnoreCase(vol)) return path.isEmpty() ? "הזיכרון הפנימי" : path;
+        if ("home".equalsIgnoreCase(vol)) return path.isEmpty() ? "Documents" : "Documents/" + path;
+        if ("downloads".equalsIgnoreCase(vol) || vol.startsWith("raw")) return "Download";
+        return "כרטיס זיכרון" + (path.isEmpty() ? "" : ": " + path);
     }
 
     static String mimeOf(String name, String mime) {
@@ -48,7 +71,7 @@ final class Saver implements IncomingJob.Sinks {
         if (tree != null) { try { return treeSink(name, mime); } catch (Exception e) { /* folder gone: fall back to the default */ } }
         if (Build.VERSION.SDK_INT >= 29) return storeSink(name, mime);
         boolean canWrite = ctx.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-        File base = canWrite ? Environment.getExternalStoragePublicDirectory(publicDir(mime)) : ctx.getExternalFilesDir("Received");
+        File base = canWrite ? Environment.getExternalStoragePublicDirectory(allDownloads ? Environment.DIRECTORY_DOWNLOADS : publicDir(mime)) : ctx.getExternalFilesDir("Received");
         if (base == null) base = new File(ctx.getFilesDir(), "Received");
         return fileSink(new File(base, FOLDER), name, canWrite);
     }
@@ -63,7 +86,7 @@ final class Saver implements IncomingJob.Sinks {
     @android.annotation.TargetApi(29)
     private IncomingJob.Sink storeSink(String name, String mime) throws IOException {
         Uri uri = null;
-        try { uri = insert(collection(mime), publicDir(mime), name, mime); } catch (Exception ignored) { }
+        if (!allDownloads) { try { uri = insert(collection(mime), publicDir(mime), name, mime); } catch (Exception ignored) { } }
         if (uri == null) uri = insert(MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), Environment.DIRECTORY_DOWNLOADS, name, mime);
         if (uri == null) throw new IOException("cant-create");
         final Uri u = uri;

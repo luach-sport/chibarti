@@ -12,3 +12,4 @@
 .nogap .xfer .head .grow > * + * { margin-top: 10px; }
 .nogap .chips > * { margin: 0 0 8px 8px; }
 .nogap .xfer .ctl > * + *, .nogap .file-row .acts > * + * { margin-right: 4px; }
+.nogap .dev-row .acts > * + * { margin-right: 4px; }

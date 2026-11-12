@@ -176,6 +176,63 @@ await page.waitForTimeout(400);
 ok(await ev(() => !window.__chibarti.CB.sheetIs('control') && !!document.querySelector('.ctl-on [data-action="control-stop"]')), 'controlled banner with stop');
 await noSideScroll('controlled');
 
+// ---------- remembered devices: one tap on Home or in the list connects without a code ----------
+const DEVS = [{ id: 'b1', name: 'Redmi Note 9', model: 'Xiaomi Redmi Note 9', last: Date.now() - 36e5, since: Date.now() - 9 * 864e5, via: 'wifi-direct' },
+  { id: 'c1', name: 'מחשב העבודה', model: 'Windows', last: Date.now() - 864e5, since: Date.now() - 9 * 864e5, via: 'program' }];
+await ev((d) => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.tab = 'home'; K.sim.set({ devices: d }); K.render(); }, DEVS);
+await page.waitForTimeout(300);
+const kh = await ev(() => ({ rows: document.querySelectorAll('.dev-row [data-action="known-connect"]').length, text: document.getElementById('screen').textContent }));
+ok(kh.rows === 1 && kh.text.includes('מכשירים מוכרים') && kh.text.includes('Redmi Note 9') && !kh.text.includes('מחשב העבודה'), 'Home lists remembered phones', kh);
+await noSideScroll('home with remembered phones');
+await page.click('.dev-row [data-action="known-connect"]');
+await page.waitForTimeout(300);
+const kw = await ev(() => ({ card: document.getElementById('link-card').textContent, list: document.querySelectorAll('.dev-row').length }));
+ok(kw.card.includes('מחפש את Redmi Note 9') && kw.card.includes('התחלת חיבור') && kw.list === 0, 'searching for the remembered phone', kw);
+await page.click('[data-action="known-cancel"]');
+await page.waitForTimeout(300);
+ok(await ev(() => document.querySelectorAll('.dev-row [data-action="known-connect"]').length === 1 && !document.getElementById('link-card').textContent.includes('מחפש')), 'search cancelled');
+await page.click('[data-action="open-devices"]');
+await page.waitForTimeout(300);
+const dv = await ev(() => ({ phone: !!document.querySelector('[data-action="known-connect"][data-id="b1"]'), pc: document.querySelectorAll('.dev-row [data-action="pc"]').length, forget: document.querySelectorAll('[data-action="forget"]').length }));
+ok(dv.phone && dv.pc === 1 && dv.forget === 2, 'devices page: connect and forget', dv);
+await noSideScroll('devices page');
+await ev(() => window.__chibarti.CB.sim.set({ join: { on: false, step: '', name: '', error: '', pinFor: { key: 'p:aa', name: 'Redmi Note 9' } } }));
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('pin') && document.querySelector('.sheet').textContent.includes('Redmi Note 9')), 'a changed key asks for the code once');
+
+// ---------- where received files are saved ----------
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.tab = 'settings'; K.render(); });
+await page.waitForTimeout(400);
+await page.click('[data-action="save-where"]');
+await page.waitForTimeout(300);
+const sw = await ev(() => ({ open: window.__chibarti.CB.sheetIs('saveWhere'), rows: document.querySelectorAll('.sheet [data-action="save-mode"]').length, on: (document.querySelector('.sheet [data-action="save-mode"][aria-pressed="true"]') || {}).dataset }));
+ok(sw.open && sw.rows === 3 && sw.on && sw.on.v === 'auto', 'save sheet, by kind by default', sw);
+await noSideScroll('save sheet');
+await page.click('.sheet [data-action="save-mode"][data-v="downloads"]');
+await page.waitForTimeout(300);
+ok(await ev(() => (document.querySelector('.sheet [data-action="save-mode"][aria-pressed="true"]') || {}).dataset.v === 'downloads' && window.__chibarti.CB.ui.env.saveMode === 'downloads'), 'all in Download');
+await page.click('.sheet [data-action="save-mode"][data-v="folder"]');
+await page.waitForTimeout(400);
+const sf = await ev(() => ({ v: (document.querySelector('.sheet [data-action="save-mode"][aria-pressed="true"]') || {}).dataset.v, other: !!document.querySelector('.sheet [data-action="pick-folder"]'), txt: document.querySelector('.sheet').textContent }));
+ok(sf.v === 'folder' && sf.other && sf.txt.includes('Download/מהטלפון'), 'a picked folder', sf);
+await ev(() => window.__chibarti.CB.closeSheet());
+await page.waitForTimeout(200);
+ok(await ev(() => document.getElementById('screen').textContent.includes('בתיקייה שבחרת: Download/מהטלפון')), 'settings says where');
+await ev(() => window.__chibarti.CB.sim.set({ mode: 'connected', link: { peerId: 'p1', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', since: Date.now(), quality: 'great' },
+  offers: [{ tid: 77, peer: 'Redmi Note 9', total: 5e6, free: 9e9, files: [{ name: 'סרט.mp4', mime: 'video/mp4', size: 5e6 }] }] }));
+await page.waitForTimeout(400);
+ok(await ev(() => window.__chibarti.CB.sheetIs('offer') && document.querySelector('.sheet').textContent.includes('יישמר בתיקייה שבחרת')), 'the approval says where it goes');
+await page.click('.sheet [data-action="save-where"]');
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('saveWhere')), 'change from the approval');
+await page.click('.sheet [data-action="save-mode"][data-v="auto"]');
+await ev(() => window.__chibarti.CB.closeSheet());
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('offer') && document.querySelector('.sheet').textContent.includes('לפי סוג')), 'back to the approval');
+await ev(() => { const K = window.__chibarti.CB; K.closeSheet(); K.sim.set({ offers: [] }); K.ui.tab = 'files'; K.ui.filesSeg = 'received'; K.render(true); });
+await page.waitForTimeout(300);
+ok(await ev(() => !!document.querySelector('#screen .notice [data-action="save-where"]')), 'received files: change where');
+
 await ev(() => { const K = window.__chibarti.CB; K.state.settings.theme = 'dark'; K.applyTheme(); });
 ok(await ev(() => document.documentElement.getAttribute('data-theme')) === 'dark', 'dark theme');
 

@@ -25,3 +25,9 @@
 .task-tile.big { width: 60px; height: 60px; border-radius: 18px; }
 .pick-list .row[aria-pressed="true"] .t, .pick-list button[aria-pressed="true"] .t { color: var(--primary-text); font-weight: 700; }
 .btn.small { min-height: 40px; }
+
+/* a remembered device: connect / forget on the side */
+.dev-row .acts { display: flex; align-items: center; gap: 4px; flex: none; }
+.dev-row .btn.small { width: auto; }
+.dev-row.stack { flex-wrap: wrap; }
+.dev-row.stack .acts { width: 100%; padding-right: 54px; margin-top: 2px; }

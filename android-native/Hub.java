@@ -73,10 +73,14 @@ final class Hub implements Session.Listener {
     /** Not synchronized on purpose: every part guards its own data, so no lock order can deadlock. */
     JSONObject snapshot() {
         JSONObject s = new JSONObject();
+        // each part on its own: one part that fails must not hide the others (the list of remembered devices, say)
         try {
             s.put("me", new JSONObject().put("id", ids.myId()).put("name", ids.myName()).put("custom", ids.customName()));
             s.put("mode", mode());
-            connect.describe(s);
+        } catch (Exception ignored) { }
+        try { s.put("devices", ids.list()); } catch (Exception ignored) { }
+        try { connect.describe(s); } catch (Exception e) { android.util.Log.w("Chibarti", "describe connect", e); }
+        try {
             Session ss = session;
             if (ss != null && ss.state != Session.CLOSED) {
                 JSONObject l = new JSONObject();
@@ -87,13 +91,12 @@ final class Hub implements Session.Listener {
                     .put("quality", ss.rttMs < 0 ? "" : ss.rttMs < 40 ? "great" : ss.rttMs < 120 ? "good" : "weak");
                 s.put("link", l);
             }
-            s.put("transfers", transfers.describe());
-            s.put("offers", transfers.offers());
-            s.put("mirror", mirror.describe());
-            s.put("control", control.describe());
-            s.put("devices", ids.list());
-            s.put("textCount", history.texts().length());
         } catch (Exception ignored) { }
+        try { s.put("transfers", transfers.describe()); } catch (Exception e) { android.util.Log.w("Chibarti", "describe transfers", e); }
+        try { s.put("offers", transfers.offers()); } catch (Exception ignored) { }
+        try { s.put("mirror", mirror.describe()); } catch (Exception ignored) { }
+        try { s.put("control", control.describe()); } catch (Exception ignored) { }
+        try { s.put("textCount", history.texts().length()); } catch (Exception ignored) { }
         return s;
     }
 
@@ -118,6 +121,10 @@ final class Hub implements Session.Listener {
         if (old != null && old != s) old.close("replaced", true);
         s.start(link);
         ids.touch(s.peerId, s.via);
+        // two remembered phones swap the keys of their temporary networks, so next time no code is needed either way
+        if ("phone".equals(s.kind) && ids.trustedKey(s.peerId) != null) {
+            try { s.control(Proto.NET_KEY, new JSONObject().put("net", Crypto.b64(ids.netKey()))); } catch (Exception ignored) { }
+        }
         connect.onSessionStarted(s);
         notice("connected", s.peerName);
         changed();
@@ -143,6 +150,9 @@ final class Hub implements Session.Listener {
             switch (f.type) {
                 case Proto.TEXT: onText(o, false); break;
                 case Proto.BYE: s.close(o.optString("reason", "peer"), false); break;
+                case Proto.NET_KEY:
+                    if (ids.trustedKey(s.peerId) != null) { try { ids.saveNet(s.peerId, Crypto.unb64(o.optString("net"))); } catch (Exception ignored) { } }
+                    break;
                 case Proto.OFFER: case Proto.OFFER_REPLY: case Proto.FILE_END: case Proto.FILE_ACK:
                 case Proto.CANCEL: case Proto.PAUSE: case Proto.RESUME:
                     transfers.onControl(f.type, o); break;

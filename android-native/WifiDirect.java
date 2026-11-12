@@ -45,6 +45,9 @@ final class WifiDirect {
         int status;
         boolean app, owner;
         long seen;
+        // from the announcement of a hosting Chibarti phone: its port, its network's kind and the two seals (NetSeal)
+        volatile int port = Proto.PORT;
+        volatile String method = "", sealPin = "", sealKnown = "", addrs = "";
     }
 
     private final Context ctx;
@@ -148,14 +151,18 @@ final class WifiDirect {
         connected = false; owner = false; ownerIp = null;
     }
 
-    /** Lets nearby phones that search see this one as a Chibarti device, with its id, name and port. */
-    void advertise(String id, String name, int port) {
+    /**
+     * Lets nearby phones that search see this one as a Chibarti device, with its id, name and port, and (extra) its
+     * network sealed with the code on the screen and with the key of the remembered phones (NetSeal).
+     */
+    void advertise(String id, String name, int port, Map<String, String> extra) {
         if (!ready()) return;
         Map<String, String> txt = new HashMap<>();
         txt.put("i", id);
         txt.put("p", String.valueOf(port));
         txt.put("n", QrPayload.clean(name, 30));
-        txt.put("v", "1");
+        txt.put("v", "2");
+        if (extra != null) txt.putAll(extra);
         WifiP2pDnsSdServiceInfo info = WifiP2pDnsSdServiceInfo.newInstance("chibarti-" + id.substring(0, 8), SERVICE, txt);
         try { mgr.clearLocalServices(ch, al((ok, r, a, b) -> { try { mgr.addLocalService(ch, info, al(null)); } catch (Exception ignored) { } })); } catch (Exception ignored) { }
     }
@@ -176,6 +183,11 @@ final class WifiDirect {
                 p.app = true;
                 p.id = txt.get("i");
                 p.name = txt.get("n");
+                try { p.port = Integer.parseInt(txt.get("p")); } catch (Exception e) { p.port = Proto.PORT; }
+                p.method = txt.get("m") == null ? "" : txt.get("m");
+                p.sealPin = txt.get("w") == null ? "" : txt.get("w");
+                p.sealKnown = txt.get("r") == null ? "" : txt.get("r");
+                p.addrs = txt.get("a") == null ? "" : txt.get("a");
                 ev.onPeers();
             });
             WifiP2pDnsSdServiceRequest req = WifiP2pDnsSdServiceRequest.newInstance(SERVICE);
@@ -194,6 +206,17 @@ final class WifiDirect {
             try { mgr.discoverPeers(ch, al(null)); } catch (Exception ignored) { }
             serviceRound();
         }, 12000);
+    }
+
+    /** Asks the nearby Chibarti phones again (a new code means a new seal), also after the search was stopped. */
+    void refreshServices() {
+        if (!ready()) return;
+        try {
+            WifiP2pDnsSdServiceRequest req = WifiP2pDnsSdServiceRequest.newInstance(SERVICE);
+            mgr.clearServiceRequests(ch, al((o, r, a, b) -> {
+                try { mgr.addServiceRequest(ch, req, al((o2, r2, a2, b2) -> { try { mgr.discoverServices(ch, al(null)); } catch (Exception ignored) { } })); } catch (Exception ignored) { }
+            }));
+        } catch (Exception ignored) { }
     }
 
     void stopScan() {

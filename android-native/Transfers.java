@@ -52,7 +52,9 @@ final class Transfers {
         for (int k = 0; k < files.length() && k < 500; k++) {
             JSONObject f = files.getJSONObject(k);
             final Uri uri = Uri.parse(f.getString("uri"));
-            OutgoingJob.Item it = new OutgoingJob.Item(k + 1, IncomingJob.safeName(f.optString("name")), f.optString("mime", ""), f.optLong("size", -1), () -> cr.openInputStream(uri));
+            long size = f.optLong("size", -1);
+            if (size < 0) size = lengthOf(cr, uri);
+            OutgoingJob.Item it = new OutgoingJob.Item(k + 1, IncomingJob.safeName(f.optString("name")), f.optString("mime", ""), size, () -> cr.openInputStream(uri));
             it.uri = uri.toString();
             j.o.items.add(it);
         }
@@ -62,6 +64,13 @@ final class Transfers {
         offer(j, false);
         hub.changed();
         return j.tid;
+    }
+
+    /** The real length when the file picker didn't say (-1 when it can't be known before reading). */
+    private static long lengthOf(ContentResolver cr, Uri uri) {
+        try (android.content.res.AssetFileDescriptor fd = cr.openAssetFileDescriptor(uri, "r")) {
+            return fd == null ? -1 : fd.getLength();
+        } catch (Exception e) { return -1; }
     }
 
     private void offer(Job j, boolean resume) throws Exception {
@@ -81,9 +90,15 @@ final class Transfers {
         Thread t = new Thread(() -> {
             try {
                 j.o.run(new OutgoingJob.Wire() {
-                    @Override public void chunk(int tid, int fid, long off, byte[] buf, int len) throws IOException { s.bulk(Proto.CHUNK, Proto.chunk(tid, fid, off, buf, len), gen); }
+                    @Override public void chunk(int tid, int fid, long off, byte[] buf, int len) throws IOException {
+                        s.bulk(Proto.CHUNK, Proto.chunk(tid, fid, off, buf, len), gen);
+                        hub.changed(); // the bar on this phone moves too (at most ~6 times a second)
+                    }
                     @Override public void end(int tid, int fid, long size, String sha) throws IOException {
-                        try { s.control(Proto.FILE_END, new JSONObject().put("tid", tid).put("fid", fid).put("size", size).put("sha", sha)); } catch (Exception e) { throw new IOException(e); }
+                        JSONObject o;
+                        try { o = new JSONObject().put("tid", tid).put("fid", fid).put("size", size).put("sha", sha); } catch (Exception e) { throw new IOException(e); }
+                        s.bulkControl(Proto.FILE_END, o, gen);
+                        hub.changed();
                     }
                 });
             } catch (OutgoingJob.Cancelled e) {
@@ -207,7 +222,7 @@ final class Transfers {
         JSONArray files = o.optJSONArray("files");
         if (files == null || files.length() == 0 || files.length() > 500) return;
         Job j = new Job(tid, false);
-        j.i = new IncomingJob(tid, new Saver(hub.ctx, hub.ids.pref("folder", "")));
+        j.i = new IncomingJob(tid, new Saver(hub.ctx, Saver.mode(hub.ids), hub.ids.pref("folder", "")));
         for (int k = 0; k < files.length(); k++) {
             JSONObject f = files.getJSONObject(k);
             j.i.items.add(new IncomingJob.Item(f.optInt("fid"), IncomingJob.safeName(f.optString("name")), QrPayload.clean(f.optString("mime"), 100), f.optLong("size", -1)));

@@ -92,7 +92,13 @@ final class OutgoingJob {
             it.sha = Crypto.hex(md.digest());
             it.state = CHECKING;
             resumeAt.remove(it.fid);
-            w.end(tid, it.fid, it.sent, it.sha);
+            try {
+                w.end(tid, it.fid, it.sent, it.sha);
+            } catch (IOException e) {
+                // the connection dropped before "finished" went out: send this file again after the reconnect
+                if (it.state == CHECKING) it.state = SENDING;
+                throw e;
+            }
         }
     }
 

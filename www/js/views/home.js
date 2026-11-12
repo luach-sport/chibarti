@@ -60,6 +60,12 @@
         '<div class="acts"><button type="button" class="hbtn" data-action="show-host">' + icon('qr') + 'הצגת הקוד</button>' +
         '<button type="button" class="hbtn ghost" data-action="stop-host">ביטול</button></div>';
     }
+    const want = L.join && L.join.want;
+    if (want) {
+      return duo(false) + '<h2 class="t">' + esc('מחפש את ' + (want.name || 'הטלפון')) + '…</h2>' +
+        '<p class="s">' + esc(CB.pre('ב', want.name || 'טלפון השני')) + ' פותחים את חיברתי ולוחצים "התחלת חיבור". החיבור יקרה לבד, בלי קוד ובלי אישור.</p>' +
+        '<div class="acts one"><button type="button" class="hbtn ghost" data-action="known-cancel">ביטול</button></div>';
+    }
     const err = L.join && L.join.error ? CB.joinError(L.join.error) : '';
     return duo(false) + '<h2 class="t">שני טלפונים, בלי אינטרנט</h2>' +
       '<p class="s">מסך, קבצים והודעות עוברים ישירות ביניהם. בלי ראוטר ובלי שרת.</p>' +
@@ -69,6 +75,19 @@
       '<div class="mores"><button type="button" class="more" data-action="nearby">' + icon('radar', 'xs') + 'אין מצלמה? חיפוש בסביבה</button>' +
       '<button type="button" class="more" data-action="pc">' + icon('monitor', 'xs') + 'חיבור למחשב</button></div>' +
       (L.host && L.host.pcReady ? '<p class="pc-ready">' + icon('monitor', 'xs') + 'המחשב שלך יכול להתחבר עכשיו מתוכנת חיברתי</p>' : '');
+  }
+
+  // Remembered phones: one tap connects (no code, no approval) once the other phone taps "Start a connection".
+  const knownPhones = () => (CB.L().devices || []).filter((d) => d.via !== 'pc' && d.via !== 'program').sort((a, b) => (b.last || 0) - (a.last || 0));
+  function known() {
+    const L = CB.L();
+    if (L.mode !== 'idle' || (L.join && L.join.want)) return '';
+    const list = knownPhones();
+    if (!list.length) return '';
+    return '<div class="sec-head"><h2>מכשירים מוכרים</h2><button type="button" data-action="open-devices">הכל</button></div>' +
+      '<div class="card list">' + list.slice(0, 3).map((d) => '<div class="row dev-row"><span class="tile">' + icon('phone') + '</span>' +
+        '<span class="grow"><span class="t">' + esc(d.name || 'טלפון') + '</span><span class="s">' + (d.last ? 'חיבור אחרון: ' + esc(CB.ago(d.last)) + ' · ' : '') + 'בלי קוד</span></span>' +
+        '<span class="acts"><button type="button" class="btn small" data-action="known-connect" data-id="' + esc(d.id) + '">' + icon('link', 'sm') + 'התחברות</button></span></div>').join('') + '</div>';
   }
 
   function quick() {
@@ -103,12 +122,13 @@
       return '<header class="top"><div class="brand">' + CB.logo(42) + '<div class="name"><h1 class="h1">חיברתי</h1>' +
         '<span class="me">הטלפון הזה: ' + esc(me.name || '') + '</span></div></div>' +
         '<button type="button" class="icon-btn" aria-label="המכשירים שלי" data-action="open-devices">' + icon('phones') + '</button></header>' +
-        '<section class="link-card" id="link-card" aria-live="polite">' + card() + '</section>' + quick() + active() + recent();
+        '<section class="link-card" id="link-card" aria-live="polite">' + card() + '</section>' + known() + quick() + active() + recent();
     },
     sig: () => {
       const L = CB.L();
       const t = (L.transfers || []).filter((x) => ['asking', 'sending', 'receiving', 'paused', 'interrupted'].indexOf(x.state) >= 0).map((x) => x.tid + x.state).join(',');
-      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, L.join && L.join.step, L.join && L.join.error, L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
+      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, L.join && L.join.step, L.join && L.join.error, L.join && L.join.want && L.join.want.id,
+        knownPhones().map((d) => d.id + d.name).join(','), L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
     },
     live: () => {
       const L = CB.L(), l = L.link;
