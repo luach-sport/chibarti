@@ -53,3 +53,10 @@
 @keyframes pulse { 50% { opacity: .35; transform: scale(.8); } }
 
 .link-card .hint { margin: 10px 0 0; font-size: 13px; color: #FFE7A8; }
+
+/* a room: dots for the devices, chips with their names (tap → the room page) */
+.room-art { display: flex; justify-content: center; align-items: center; gap: 10px; height: 64px; }
+.room-art .dot { width: 26px; height: 40px; border-radius: 7px; background: rgba(255, 255, 255, .85); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
+.room-art .dot.me { width: 30px; height: 48px; background: #FFFFFF; outline: 3px solid #FFD27A; outline-offset: 2px; }
+.room-chips { border: 0; background: none; padding: 0; width: 100%; justify-content: center; cursor: pointer; }
+.link-card .wait-more { display: flex; margin: 10px auto 0; }

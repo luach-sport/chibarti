@@ -16,3 +16,4 @@
 .nogap .reply-bar > * + * { margin-right: 8px; }
 .nogap .guide > * + * { margin-top: 10px; } .nogap .guide .g > * + *, .nogap .guide .row-btns > * + * { margin-right: 10px; } .nogap .guide .body > * + * { margin-top: 6px; }
 .nogap .diag-acts > * + * { margin-right: 8px; margin-bottom: 8px; }
+.nogap .room-art > * + * { margin-right: 10px; }

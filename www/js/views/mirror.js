@@ -13,10 +13,17 @@
       '<path class="ln" d="M70 44h30M70 56h20M218 40h36M218 54h24"/><circle class="sun" cx="87" cy="92" r="11"/><circle class="sun" cx="237" cy="95" r="13"/></svg></div>';
   }
 
+  // In a room: screen sharing goes to the main device; the room's host can choose which.
+  function partner() {
+    if (!CB.inRoom()) return '';
+    if (!CB.isRoomHost()) return '<div class="notice gray">' + icon('info', 'sm') + '<span class="grow">בחדר, שיתוף המסך הוא עם ' + esc(CB.peerName()) + ' (מי שפתח את החדר).</span></div>';
+    return '<button type="button" class="banner" data-action="open-room"><span class="ic">' + icon('phones') + '</span><span class="txt"><span class="t">' + esc(CB.pre('עם ', CB.peerName())) + '</span><span class="s">שיתוף המסך הולך למכשיר הראשי בחדר. אפשר להחליף אותו</span></span><span class="go">החלפה</span></button>';
+  }
+
   function idle() {
     const st = CB.state.settings, env = CB.ui.env || {};
     const audioOk = env.audioCapture !== false;
-    return '<div class="mirror-card">' + art() +
+    return partner() + '<div class="mirror-card">' + art() +
       '<h2>' + esc(CB.pre('שיתוף המסך שלי ל', CB.peerName())) + '</h2><p>כל מה שעל המסך שלך יופיע אצל ' + esc(CB.peerName()) + ', בזמן אמת. אנדרואיד ישאל פעם אחת לפני שמתחילים.</p>' +
       '<span class="section-label" style="margin:0">איכות</span><div class="q-grid" role="group" aria-label="איכות">' +
       CB.QUALITIES.map((q) => '<button type="button" data-action="set-quality" data-v="' + q.v + '" aria-pressed="' + (st.quality === q.v) + '"><b>' + q.label + '</b><small>' + q.sub + '</small></button>').join('') + '</div>' +
@@ -67,7 +74,7 @@
       if (m.error === 'capture') h += '<div class="notice warn">' + icon('alert', 'sm') + '<span class="grow">צילום המסך לא הצליח במכשיר הזה. נסו איכות נמוכה יותר.</span></div>';
       return h + (m.role === 'none' ? idle() : live(m));
     },
-    sig: () => { const m = CB.L().mirror || {}; return [CB.connected(), m.role, m.role === 'sending' ? m.state : '', m.error, CB.peerName(), CB.ui.env && CB.ui.env.audioCapture, (CB.L().control || {}).role].join('|'); },
+    sig: () => { const m = CB.L().mirror || {}; return [CB.connected(), CB.inRoom(), m.role, m.role === 'sending' ? m.state : '', m.error, CB.peerName(), CB.ui.env && CB.ui.env.audioCapture, (CB.L().control || {}).role].join('|'); },
     live: () => {
       const m = CB.L().mirror || {};
       if (m.role === 'sending') { CB.part('mstats', statsHtml(m)); CB.setText('mnote', (AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '')); }

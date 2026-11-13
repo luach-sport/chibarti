@@ -238,7 +238,7 @@ final class Joiner implements LanBeacon.Found {
     private void finish(Handshake.Result r, String via, String addr, int port, Network net, int mode) throws Exception {
         setStep("approval");
         Diag.log("join", "secure connection to " + addr + " (" + via + ", " + Connect.modeName(mode) + "), waiting for approval");
-        JSONObject hello = new JSONObject().put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1);
+        JSONObject hello = new JSONObject().put("name", hub.ids.myName()).put("model", Build.MODEL).put("sdk", Build.VERSION.SDK_INT).put("app", 1).put("room", 1);
         r.link.send(Proto.HELLO, Proto.json(hello));
         r.link.setReadTimeout(75000);
         Link.Frame f;

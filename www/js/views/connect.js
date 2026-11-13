@@ -31,7 +31,7 @@
       if (ready) box = '<div class="sq" id="qr-sq">' + CB.qrSvg(h.qr) + '</div>';
       else if (h.error && !h.ready) box = '<div class="sq"><div class="wait">' + icon('alert', 'lg') + esc(CB.hostError(h.error)) + '</div></div>';
       else box = '<div class="sq"><div class="wait"><span class="spin"></span>מכין רשת ישירה בין הטלפונים…</div></div>';
-      let x = head('חיבור חדש') + '<div class="qr-stage"><div class="qr-box">' + box + '</div>' +
+      let x = head(CB.connected() ? 'מכשיר נוסף לחדר' : 'חיבור חדש') + '<div class="qr-stage"><div class="qr-box">' + box + '</div>' +
         '<div class="pin-line"><span class="lbl">או מקלידים את הקוד</span><div class="pin" id="pin">' + pinHtml(ready ? h.pin : '') + '</div>' +
         '<span class="timer" id="qr-timer">' + (ready ? timer(h) : '') + '</span></div>' +
         (ready ? '<span class="via-chip">' + icon(h.method === 'd' ? 'phones' : 'wifi', 'xs') + esc(METHOD[h.method] || '') + (h.network ? ' · <span class="ltr">' + esc(h.network) + '</span>' : '') + '</span>' : '') + '</div>';

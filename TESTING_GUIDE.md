@@ -73,6 +73,13 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] Old phone whose encoder can't do 1080p/60 → it silently uses a smaller size.
 - [ ] Then the other direction: B shares to A.
 
+### A room (3+ devices)
+- [ ] A and B connected; A home → "מכשיר נוסף" → C joins with the code/QR; B stays connected. Home shows "החדר שלך · 3 מכשירים".
+- [ ] A message from B shows on A and C with B's name; a message from A reaches both.
+- [ ] B → files → "למי לשלוח?" → C: arrives on C through A, checked. "לכולם": A and C each approve.
+- [ ] A room page → "לראשי" on C → screen sharing from A goes to C. "הוצאה" on B → B sees "הוצאת מהחדר".
+- [ ] C turns Wi-Fi off in the middle of a file from B → B sees it stopped ("החיבור אבד באמצע"), A and B stay connected.
+
 ### Text
 - [ ] Send Hebrew, English, a link, multi-line text → appear on the other phone; "העתקה" puts it on the clipboard.
 - [ ] "הדבקה" reads the clipboard only when pressed. A message arriving while typing doesn't clear the draft.

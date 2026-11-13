@@ -75,6 +75,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
 
     // ---------- hosting ----------
     void host() {
+        if (hub.isHost()) { addMember(); return; }
         synchronized (this) {
             if (hosting) return;
             hosting = true;
@@ -95,6 +96,29 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             if (ok) { ready("d", name, password); return; }
             tryHotspot(WifiDirect.reason(reason));
         });
+        h.postDelayed(this::refreshCode, 5000);
+    }
+
+    /**
+     * A room: while devices are connected to this phone, "add a device" offers the same network again with a new code
+     * (no new group, so nobody connected is dropped). The next approved device joins the room.
+     */
+    private void addMember() {
+        synchronized (this) {
+            if (hosting) return;
+            if (hub.members.size() >= Hub.ROOM_MAX) { hub.notice("room-full", null); return; }
+            hosting = true;
+            hostReady = true;
+            hostError = null;
+            pairing = new Pairing(System::currentTimeMillis);
+        }
+        Diag.log("room", "offering a place in the room (" + hub.members.size() + " connected, " + ("d".equals(method) ? "Wi-Fi Direct" : "h".equals(method) ? "hotspot" : "shared Wi-Fi") + ")");
+        LinkService.start(ctx);
+        startWeb();
+        advertisedPin = "";
+        advertiseNet();
+        beacon.startSending(hub.ids.myId(), hub.ids.myName(), server.port);
+        hub.changed();
         h.postDelayed(this::refreshCode, 5000);
     }
 
@@ -327,11 +351,11 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     @Override public Handshake.Secrets secrets() {
         return new Handshake.Secrets() {
             @Override public byte[] secretFor(int mode, String clientId) {
-                Session s = hub.session;
+                Session s = hub.member(clientId);
                 switch (mode) {
                     case Handshake.MODE_QR: case Handshake.MODE_PIN: { Pairing p = pairing; return hosting && p != null ? p.secretFor(mode) : null; }
                     case Handshake.MODE_TRUSTED: return hosting ? hub.ids.trustedKey(clientId) : null;
-                    default: return s != null && s.host && s.peerId.equals(clientId) && s.state != Session.CLOSED ? s.key : null;
+                    default: return s != null && s.host && s.state != Session.CLOSED ? s.key : null;
                 }
             }
             @Override public int refuseCode(int mode, String clientId) {
@@ -348,13 +372,13 @@ final class Connect implements Server.Gate, WifiDirect.Events {
 
     @Override public void accepted(Handshake.Result r, String ip) {
         try {
-            Session cur = hub.session;
+            Session cur = hub.member(r.peerId);
             if (r.mode == Handshake.MODE_RESUME) {
-                if (cur != null && cur.peerId.equals(r.peerId)) cur.replaceMain(r.link); else r.link.close();
+                if (cur != null) cur.replaceMain(r.link); else r.link.close();
                 return;
             }
             if (r.mode == Handshake.MODE_STREAM) {
-                if (cur != null && cur.peerId.equals(r.peerId)) { cur.attachStream(r.link); hub.mirror.onStreamAttached(); } else r.link.close();
+                if (cur != null) { cur.attachStream(r.link); if (cur == hub.session) hub.mirror.onStreamAttached(); } else r.link.close();
                 return;
             }
             Diag.log("host", "secure connection from " + ip + " (" + modeName(r.mode) + ")");
@@ -365,7 +389,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             JSONObject hello = new JSONObject(f.text());
             String name = QrPayload.clean(hello.optString("name", "Android"), 40), model = QrPayload.clean(hello.optString("model", ""), 60);
             String via = ip != null && ip.startsWith("192.168.49.") ? "wifi-direct" : "h".equals(method) ? "hotspot" : "wifi";
-            approveAndAttach(r.link, r.peerId, r.mode, name, model, hello.optInt("sdk"), via, "phone", ip);
+            approveAndAttach(r.link, r.peerId, r.mode, name, model, hello.optInt("sdk"), via, "phone", ip, hello.optInt("room") >= 1);
         } catch (Exception e) {
             Diag.log("host", "connection dropped before approval: " + Diag.why(e));
             r.link.close();
@@ -396,12 +420,12 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             String mode = h.optString("mode", "pin");
             byte[] key;
             try { key = Crypto.unb64(h.optString("key", "")); } catch (Exception e) { key = new byte[0]; }
-            Session cur = hub.session;
+            Session cur = hub.member(id);
             if ("resume".equals(mode) || "stream".equals(mode)) {
-                if (cur != null && cur.state != Session.CLOSED && cur.peerId.equals(id) && "pc".equals(cur.kind) && Crypto.same(cur.key, key)) {
+                if (cur != null && cur.state != Session.CLOSED && "pc".equals(cur.kind) && Crypto.same(cur.key, key)) {
                     link.send(Proto.APPROVED, Proto.json(new JSONObject().put("resumed", true)));
                     if ("resume".equals(mode)) cur.replaceMain(link);
-                    else { cur.attachStream(link); hub.mirror.onStreamAttached(); }
+                    else { cur.attachStream(link); if (cur == hub.session) hub.mirror.onStreamAttached(); }
                 } else deny(link, "unknown");
                 return;
             }
@@ -433,15 +457,16 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 m = Handshake.MODE_PIN;
             }
             // the חיברתי program on Windows, or a browser page
-            approveAndAttach(link, id, m, name, model, 0, "program".equals(h.optString("client")) ? "program" : "pc", "pc", link.remoteIp);
+            approveAndAttach(link, id, m, name, model, 0, "program".equals(h.optString("client")) ? "program" : "pc", "pc", link.remoteIp, false);
         } catch (Exception e) {
             link.close();
         }
     }
 
     /** Same for phones and computers: a new device must be approved on this screen; a remembered one needs no approval. */
-    private void approveAndAttach(Link link, String peerId, int mode, String name, String model, int sdk, String via, String kind, String ip) throws Exception {
-        if (hub.busyWith(peerId)) { deny(link, "busy"); return; }
+    private void approveAndAttach(Link link, String peerId, int mode, String name, String model, int sdk, String via, String kind, String ip, boolean roomOk) throws Exception {
+        String busy = hub.canAdd(peerId);
+        if (busy != null) { deny(link, busy); return; }
         boolean remember = true;
         if (mode != Handshake.MODE_TRUSTED && mode != MODE_CLAIM) {
             Request req = new Request(Crypto.hex(Crypto.random(6)), name, model, via);
@@ -472,6 +497,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
         s.via = via;
         s.kind = kind;
         s.address = ip;
+        s.roomOk = roomOk;
         hub.attach(s, link);
     }
 

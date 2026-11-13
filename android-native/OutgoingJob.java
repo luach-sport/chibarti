@@ -39,7 +39,7 @@ final class OutgoingJob {
     final int tid;
     final List<Item> items = new ArrayList<>();
     final Map<Integer, Long> resumeAt = new HashMap<>();
-    volatile boolean paused, cancelled;
+    volatile boolean paused, cancelled, held; // held: a room's host asks to wait until the receiver catches up
 
     OutgoingJob(int tid) { this.tid = tid; }
 
@@ -75,7 +75,7 @@ final class OutgoingJob {
                 }
                 it.sent = start;
                 while (true) {
-                    while (paused && !cancelled) Thread.sleep(120);
+                    while ((paused || held) && !cancelled) Thread.sleep(120);
                     if (cancelled) throw new Cancelled();
                     int n = in.read(buf);
                     if (n < 0) break;

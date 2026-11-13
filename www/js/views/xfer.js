@@ -19,6 +19,7 @@
       case 'asking': return CB.pre('מחכה לאישור ב', t.peer || 'טלפון השני') + '…';
       case 'sending': case 'receiving':
         if (t.peerPaused) return pct + '% · הושהה בטלפון השני';
+        if (t.held) return pct + '% · ' + CB.pre('מחכה ש', t.peer || 'המכשיר השני') + ' יקלוט';
         return [pct + '%', compact ? '' : CB.bytes(t.done) + ' מתוך ' + CB.bytes(t.total), CB.speed(t.speed), CB.eta(t.eta)].filter(Boolean).join(' · ');
       case 'paused': return pct + '% · מושהה';
       case 'interrupted': return pct + '% · מחכה שהחיבור יחזור…';

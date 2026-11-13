@@ -27,12 +27,14 @@ share needs explicit approval on the receiving phone. Hebrew RTL, light/dark, th
 ```
 www/ (UI, window.CB)                      android-native/ (Java, package com.luachsport.chibarti)
  link/bridge.js  CB.N.call / CB.N.on  ⇄  ChibartiPlugin  (Capacitor plugin "Chibarti"; events: state, notice, text, link)
- link/live.js    CB.live snapshot     ⇠  Hub             (one session; snapshot() at ≤6/s; notices)
+ link/live.js    CB.live snapshot     ⇠  Hub             (members: every connection; session: the main one; room list; snapshot() at ≤6/s; notices)
                                            ├ Connect      host side: Wi-Fi Direct group → LocalOnlyHotspot → LAN; Server; approvals
                                            │  ├ Joiner    join from QR or a sealed nearby announcement (NetSeal: code / remembered key) — LAN first, P2P join API29+, WifiJoin legacy/specifier; nearby list, "connect to a remembered phone", reconnect, stream link
                                            │  ├ WifiDirect, WifiJoin, LanBeacon (UDP 47820), Server (TCP 47821), Pairing, QrPayload
                                            ├ Session      main SecureLink (control before bulk, 8-chunk bulk window; FILE_END goes in the bulk line), ping/RTT, resume
-                                           ├ Transfers    OutgoingJob / IncomingJob (64 KB chunks, SHA-256, pause, cancel, resume offsets), Saver, History
+                                           ├ Transfers    OutgoingJob / IncomingJob (64 KB chunks, SHA-256, pause, cancel, resume offsets), per connection; Saver, History
+                                           ├ Relay        a room's host passing files member→member (tid mapping, HOLD flow control)
+                                           ├ Texts        messages; the room's host passes each one to everyone with "from"
                                            └ Mirror       ScreenSender (MediaProjection → VirtualDisplay → VideoEncoder H.264 → queue → stream link,
                                                           RateControl, rotation), AudioSender (AAC, API 29+);
                                                           viewer: MirrorRx → ViewerActivity (VideoDecoder → SurfaceView, AudioPlayer → AudioTrack)

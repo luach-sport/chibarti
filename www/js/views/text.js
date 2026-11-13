@@ -43,7 +43,7 @@
   function grow(t) { t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight + 2) + 'px'; }
   CB.growComposer = grow;
 
-  const placeholder = () => (CB.connected() ? CB.pre('הודעה ל', CB.peerName()) : 'מתחברים כדי לשלוח');
+  const placeholder = () => (!CB.connected() ? 'מתחברים כדי לשלוח' : CB.inRoom() ? 'הודעה לכל ' + CB.roomCount() + ' המכשירים בחדר' : CB.pre('הודעה ל', CB.peerName()));
   V.composer = () => '<div id="reply-bar"></div><div class="composer"><button type="button" class="icon-btn paste" data-action="text-paste" aria-label="הדבקה מהלוח">' + icon('paste') + '</button>' +
     '<textarea id="composer" rows="1" placeholder="' + esc(placeholder()) + '" aria-label="הודעה" data-draft="1"></textarea>' +
     '<button type="button" class="icon-btn send" data-action="text-send" aria-label="שליחה">' + icon('send') + '</button></div>';

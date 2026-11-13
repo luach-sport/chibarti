@@ -75,6 +75,10 @@
       CB.haptic(true);
     }
     if (mode === 'hosting' && prevMode !== 'hosting' && !CB.view()) CB.pushView({ name: ui.hostFor === 'pc' ? 'pc' : 'host' });
+    // a room: one more device came in — the code page goes away by itself
+    const hv = CB.view();
+    if (mode === 'connected' && hv && hv.name === 'host' && s.host && !s.host.on && ui.hostWasOn) { ui.stack = []; ui.tab = 'home'; CB.render(); }
+    ui.hostWasOn = !!(s.host && s.host.on);
     prevMode = mode;
     autoSheets(s);
     CB.refresh();

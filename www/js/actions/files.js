@@ -53,8 +53,14 @@
     if (!CB.connected()) { CB.toast('קודם מחברים את שני הטלפונים'); return; }
     const files = CB.pickedList();
     if (!files.length) { CB.toast('לא נבחרו קבצים'); return; }
+    if (CB.inRoom()) { CB.openSheet('sendTo', { files }); return; }
+    await CB.sendPicked(files, null);
+  };
+
+  /** to: the room's devices (null: the one connected device). */
+  CB.sendPicked = async (files, to) => {
     try {
-      await CB.N.call('sendFiles', { files });
+      await CB.N.call('sendFiles', to ? { files, to } : { files });
       ui.picked = [];
       ui.media = null;
       CB.haptic(true);

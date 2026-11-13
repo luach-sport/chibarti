@@ -119,6 +119,14 @@ public class ChibartiPlugin extends Plugin {
 
     @PluginMethod public void cancelKnown(PluginCall call) { hub.connect.joiner.cancelKnown(); call.resolve(); }
 
+    // ---------- a room ----------
+    /** Which device in the room screen sharing and remote control go to. */
+    @PluginMethod public void setMain(PluginCall call) {
+        if (hub.setMain(call.getString("id", ""))) call.resolve(); else call.reject("busy");
+    }
+
+    @PluginMethod public void removeMember(PluginCall call) { hub.removeMember(call.getString("id", "")); call.resolve(); }
+
     /** The connection log (Settings → יומן חיבור). */
     @PluginMethod public void diag(PluginCall call) {
         JSObject r = new JSObject();
@@ -229,7 +237,8 @@ public class ChibartiPlugin extends Plugin {
     }
 
     @PluginMethod public void sendFiles(PluginCall call) {
-        try { call.resolve(one("tid", hub.transfers.send(call.getArray("files", new JSArray())))); }
+        // to: the devices in the room to send to (empty: the one connected device)
+        try { call.resolve(one("tids", hub.transfers.send(call.getArray("files", new JSArray()), call.getArray("to", new JSArray())))); }
         catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
     }
 

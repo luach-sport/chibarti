@@ -13,8 +13,12 @@ final class Proto {
     static final int HELLO = 1, APPROVED = 2, DENIED = 3, PING = 4, PONG = 5, BYE = 6;
     // between two remembered phones: the key that opens this phone's temporary network next time (see NetSeal)
     static final int NET_KEY = 8;
+    // a room (several devices on one hosting phone): the host tells every member who is in it
+    static final int ROOM = 9;
     static final int TEXT = 10;
     static final int OFFER = 20, OFFER_REPLY = 21, CHUNK = 22, FILE_END = 23, FILE_ACK = 24, CANCEL = 25, PAUSE = 26, RESUME = 27;
+    // a room's host passing files between two members asks the sender to wait while the receiver catches up
+    static final int HOLD = 28;
     static final int MIRROR_OFFER = 30, MIRROR_REPLY = 31, MIRROR_STOP = 32, KEY_REQUEST = 33, MIRROR_STATS = 34;
     // remote control: the one watching asks, the one sharing allows (and turns on the accessibility service once)
     static final int CONTROL_ASK = 35, CONTROL_REPLY = 36, CONTROL_STOP = 37, INPUT = 38;

@@ -29,6 +29,7 @@
 
   function card() {
     const L = CB.L(), mode = L.mode;
+    if ((mode === 'connected' || mode === 'reconnecting') && CB.inRoom()) return roomCard(L);
     if (mode === 'connected' || mode === 'reconnecting') {
       const l = L.link || {};
       const re = mode === 'reconnecting', pc = l.kind === 'pc';
@@ -39,7 +40,8 @@
         '<span class="hchip" id="lc-q">' + bars(l.quality) + esc(Q_LABEL[l.quality] || 'בודק קליטה…') + '</span>' +
         '<span class="hchip num" id="lc-since">' + icon('clock', 'xs') + CB.duration(Date.now() - (l.since || Date.now())) + '</span>' +
         '<span class="hchip">' + icon('lock', 'xs') + 'מוצפן</span></div>' +
-        '<div class="acts one"><button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'ניתוק</button></div>';
+        waitingMore(L) + (l.host && l.kind !== 'pc' ? '<div class="acts"><button type="button" class="hbtn ghost" data-action="add-member">' + icon('plus') + 'מכשיר נוסף</button>' : '<div class="acts one">') +
+        '<button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'ניתוק</button></div>';
     }
     if (mode === 'joining') {
       const st = L.join.step || 'connecting';
@@ -76,6 +78,21 @@
       '<div class="mores"><button type="button" class="more" data-action="nearby">' + icon('radar', 'xs') + 'אין מצלמה? חיפוש בסביבה</button>' +
       '<button type="button" class="more" data-action="pc">' + icon('monitor', 'xs') + 'חיבור למחשב</button></div>' +
       (L.host && L.host.pcReady ? '<p class="pc-ready">' + icon('monitor', 'xs') + 'המחשב שלך יכול להתחבר עכשיו מתוכנת חיברתי</p>' : '');
+  }
+
+  // While connected, this phone offers a place to one more device: a way back to the code.
+  const waitingMore = (L) => (L.host && L.host.on ? '<button type="button" class="more wait-more" data-action="show-host">' + icon('qr', 'xs') + 'מחכה למכשיר נוסף · הצגת הקוד</button>' : '');
+
+  // A room: who is in it, and (host) add a device / close the room, (member) leave it.
+  function roomCard(L) {
+    const others = CB.roomOthers(), host = CB.isRoomHost();
+    const chips = others.slice(0, 6).map((m) => '<span class="hchip">' + icon(m.kind === 'pc' ? 'monitor' : 'phone', 'xs') + esc(m.name || 'מכשיר') + (m.main ? ' · ראשי' : '') + '</span>').join('');
+    return '<div class="room-art" aria-hidden="true">' + others.slice(0, 5).map(() => '<span class="dot"></span>').join('') + '<span class="dot me"></span></div>' +
+      '<h2 class="t">' + (host ? 'החדר שלך · ' : 'בחדר של ' + esc(CB.peerName()) + ' · ') + CB.roomCount() + ' מכשירים</h2>' +
+      '<p class="s">הודעות עוברות לכולם, וקבצים לכולם או למכשיר אחד.' + (host ? '' : ' שיתוף מסך: עם ' + esc(CB.peerName()) + '.') + '</p>' +
+      '<button type="button" class="chips room-chips" data-action="open-room" aria-label="מי בחדר">' + chips + '</button>' + waitingMore(L) +
+      (host ? '<div class="acts"><button type="button" class="hbtn" data-action="add-member">' + icon('plus') + 'הוספת מכשיר</button><button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'סגירת החדר</button></div>'
+        : '<div class="acts one"><button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'יציאה מהחדר</button></div>');
   }
 
   // Remembered phones: one tap connects (no code, no approval) once the other phone taps "Start a connection".
@@ -128,8 +145,8 @@
     sig: () => {
       const L = CB.L();
       const t = (L.transfers || []).filter((x) => ['asking', 'sending', 'receiving', 'paused', 'interrupted'].indexOf(x.state) >= 0).map((x) => x.tid + x.state).join(',');
-      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, L.join && L.join.step, L.join && L.join.route, L.join && L.join.error, L.join && L.join.want && L.join.want.id,
-        knownPhones().map((d) => d.id + d.name).join(','), L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
+      return [L.mode, CB.ui.hostFor, L.host && L.host.pcReady, (L.room || []).map((m) => m.id + m.name + (m.main ? 1 : 0)).join(','), L.join && L.join.step, L.join && L.join.route, L.join && L.join.error, L.join && L.join.want && L.join.want.id,
+        knownPhones().map((d) => d.id + d.name).join(','), L.host && L.host.on, L.host && L.host.ready, L.link && L.link.name, L.link && L.link.via, L.mirror && L.mirror.role, t, (CB.ui.history || []).length, L.me && L.me.name].join('|');
     },
     live: () => {
       const L = CB.L(), l = L.link;

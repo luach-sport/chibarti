@@ -34,6 +34,8 @@ final class Session {
     Object network; // android.net.Network of the joined network (kept as Object so this class runs on a PC)
     volatile Link main, stream;
     String kind = "phone"; // "phone" or "pc" (a computer's browser)
+    boolean roomOk = false; // the other side understands rooms (Chibarti 2.0+ phones)
+    volatile Runnable onDrain; // pieces waiting for this device went down (a room's host passes on files)
     volatile int state = ACTIVE;
     volatile int rttMs = -1;
     volatile int generation = 0;
@@ -134,17 +136,33 @@ final class Session {
         }
     }
 
+    /** A piece passed on for another device: queued at once (the sender is asked to hold instead). Returns how many wait, -1 when gone. */
+    int bulkNow(int type, byte[] body) {
+        synchronized (q) {
+            if (state != ACTIVE) return -1;
+            bulk.add(new Object[] { type, body });
+            q.notifyAll();
+            return bulk.size();
+        }
+    }
+
+    int waiting() { synchronized (q) { return bulk.size(); } }
+
     private void writeLoop() {
         while (state != CLOSED) {
             Object[] o;
+            boolean drained = false;
             synchronized (q) {
                 while (state != CLOSED && (state == RECONNECTING || (ctl.isEmpty() && bulk.isEmpty()))) {
                     try { q.wait(1000); } catch (InterruptedException e) { return; }
                 }
                 if (state == CLOSED) return;
-                o = !ctl.isEmpty() ? ctl.poll() : bulk.poll();
+                if (!ctl.isEmpty()) o = ctl.poll();
+                else { o = bulk.poll(); drained = bulk.size() == Relay.LOW; }
                 q.notifyAll();
             }
+            Runnable d = onDrain;
+            if (drained && d != null) d.run();
             if (o == null) continue;
             Link link = main;
             try { link.send((Integer) o[0], (byte[]) o[1]); } catch (IOException e) { lost(link); }

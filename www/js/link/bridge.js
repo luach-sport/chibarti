@@ -52,12 +52,14 @@
         case 'history': return { items: S.history.slice() };
         case 'devices': return { items: s.devices };
         case 'host':
-          s.mode = 'hosting';
+          if (s.mode !== 'connected') s.mode = 'hosting';
           s.host = { on: true, ready: true, method: 'd', error: '', network: 'DIRECT-k7-Galaxy A54', pin: '482193', expiresAt: now() + 9.5 * 60e3,
             pass: 'k7Rw2pQx', addresses: ['192.168.49.1', '192.168.1.23'], web: { http: 8080, https: 8443, fp: 'AC:3D:A3:5D:2A:1E:91:AD' },
             qr: 'chibarti://join?v=1&i=0123456789abcdef0123456789abcdef&n=Galaxy%20A54&t=Qm9vbS1ib29tLWJvb20tIQ&m=d&s=DIRECT-k7-Galaxy&k=pass1234&a=192.168.49.1&p=47821&e=' + Math.round(now() / 1000 + 600) };
           changed(); return {};
-        case 'stopHost': s.mode = 'idle'; s.host = base().host; changed(); return {};
+        case 'stopHost': if (s.mode !== 'connected') s.mode = 'idle'; s.host = base().host; changed(); return {};
+        case 'setMain': (s.room || []).forEach((m) => { m.main = m.id === a.id; }); { const m = (s.room || []).filter((x) => x.id === a.id)[0]; if (m && s.link) { s.link.peerId = m.id; s.link.name = m.name; } } changed(); return {};
+        case 'removeMember': s.room = (s.room || []).filter((m) => m.id !== a.id); changed(); return {};
         case 'scan': s.scan = { on: true, error: '', peers: [
           { key: 'p:aa', id: 'b1', name: 'Redmi Note 9', via: 'wifi-direct', app: true, trusted: true },
           { key: 'l:b2', id: 'b2', name: 'הטאבלט של אבא', via: 'wifi', app: true, trusted: false },
@@ -77,7 +79,7 @@
           ? [1, 2, 3, 4, 5, 6].map((i) => ({ uri: 'sim://p' + i, name: 'IMG_20' + i + '.jpg', size: 2400000 + i * 300000, mime: i === 3 ? 'video/mp4' : 'image/jpeg' }))
           : [{ uri: 'sim://d1', name: 'חוזה שכירות.pdf', size: 845000, mime: 'application/pdf' }, { uri: 'sim://d2', name: 'תמונות טיול.zip', size: 312000000, mime: 'application/zip' }] };
         case 'thumb': return { data: '' };
-        case 'sendFiles': return { tid: 1 };
+        case 'sendFiles': S.lastFiles = a; return { tids: [1] };
         case 'pickFolder': S.folder = 'content://sim/tree/primary%3ADownload%2F' + encodeURIComponent('מהטלפון'); S.saveMode = 'folder'; return { uri: S.folder, name: 'Download/מהטלפון' };
         case 'setFolder': S.folder = a.uri || ''; if (!S.folder) S.saveMode = 'auto'; return {};
         case 'setSaveMode': S.saveMode = a.mode; return { mode: a.mode };

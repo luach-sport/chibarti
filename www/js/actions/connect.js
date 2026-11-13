@@ -126,7 +126,13 @@
     CB.render();
   };
   A['known-cancel'] = () => CB.N.call('cancelKnown');
-  A.disconnect = () => CB.confirm('ניתוק', 'לנתק את החיבור עם ' + CB.peerName() + '? העברות שעוד לא הסתיימו ייעצרו.', 'ניתוק', () => CB.N.call('disconnect'), true);
+  A.disconnect = () => {
+    if (CB.inRoom()) {
+      if (CB.isRoomHost()) return CB.confirm('סגירת החדר', 'לנתק את כל ' + CB.roomOthers().length + ' המכשירים? העברות שעוד לא הסתיימו ייעצרו.', 'סגירה', () => CB.N.call('disconnect'), true);
+      return CB.confirm('יציאה מהחדר', 'לצאת מהחדר של ' + CB.peerName() + '? העברות שעוד לא הסתיימו ייעצרו.', 'יציאה', () => CB.N.call('disconnect'), true);
+    }
+    return CB.confirm('ניתוק', 'לנתק את החיבור עם ' + CB.peerName() + '? העברות שעוד לא הסתיימו ייעצרו.', 'ניתוק', () => CB.N.call('disconnect'), true);
+  };
   A.forget = (el) => CB.confirm('שכחת המכשיר', 'לשכוח את ' + (el.dataset.name || 'המכשיר') + '? בפעם הבאה צריך קוד ואישור.', 'שכחה', () => CB.N.call('forget', { id: el.dataset.id }), true);
 
   A['needs-check'] = async () => { await CB.loadEnv(); CB.renderSheet(); };

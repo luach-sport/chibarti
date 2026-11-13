@@ -254,6 +254,53 @@ await page.waitForTimeout(300);
 ok(await ev(() => window.__chibarti.CB.sheetIs('feedback') && document.getElementById('fbm').value.includes('יומן חיבור') && document.getElementById('fbm').value.includes('group ready')), 'the log goes into a message to the developer');
 await ev(() => window.__chibarti.CB.closeSheet());
 
+// ---------- a room: several devices on this phone ----------
+const ROOM = [{ id: 'me0', name: 'Galaxy A54', host: true, me: true }, { id: 'b1', name: 'Redmi Note 9', model: 'Redmi Note 9', kind: 'phone', via: 'wifi-direct', main: true, state: 'active' },
+  { id: 'b2', name: 'הטאבלט של אבא', model: 'Galaxy Tab A7', kind: 'phone', via: 'wifi-direct', state: 'active' }, { id: 'c1', name: 'מחשב העבודה', model: 'Windows', kind: 'pc', via: 'program', state: 'active' }];
+await ev((r) => { const K = window.__chibarti.CB; K.sim.reset(); K.closeSheet(); K.ui.stack = []; K.ui.tab = 'home';
+  K.sim.set({ mode: 'connected', room: r, link: { peerId: 'b1', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', host: true, since: Date.now(), quality: 'great' } }); K.render(); }, ROOM);
+await page.waitForTimeout(300);
+const rc = await ev(() => ({ t: document.getElementById('link-card').textContent, chips: document.querySelectorAll('.room-chips .hchip').length, add: !!document.querySelector('#link-card [data-action="add-member"]') }));
+ok(rc.t.includes('החדר שלך') && rc.t.includes('4 מכשירים') && rc.chips === 3 && rc.add && rc.t.includes('סגירת החדר'), 'room card on the host', rc);
+await noSideScroll('room card');
+await page.click('.room-chips');
+await page.waitForTimeout(300);
+const rp = await ev(() => ({ rows: document.querySelectorAll('.dev-row').length, main: document.querySelectorAll('[data-action="room-main"]').length, rm: document.querySelectorAll('[data-action="room-remove"]').length }));
+ok(rp.rows === 4 && rp.main === 2 && rp.rm === 3, 'room page: everyone, choose the main one, send one out', rp);
+await noSideScroll('room page');
+await page.click('[data-action="room-main"][data-id="b2"]');
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.L().room.filter((m) => m.main)[0].id === 'b2' && window.__chibarti.CB.peerName() === 'הטאבלט של אבא'), 'the main device changed');
+await ev(() => { const K = window.__chibarti.CB; K.ui.stack = []; K.ui.tab = 'files'; K.ui.filesSeg = 'send'; K.ui.picked = [{ uri: 'sim://d1', name: 'חוזה.pdf', size: 845000, mime: 'application/pdf' }]; K.render(true); });
+await page.waitForTimeout(200);
+await page.click('[data-action="send-picked"]');
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.sheetIs('sendTo') && document.querySelectorAll('.sheet [data-action="send-to"]').length === 4), 'who gets the files: everyone or one');
+await noSideScroll('send to');
+await page.click('.sheet [data-action="send-to"][data-to="*"]');
+await page.waitForTimeout(300);
+ok(await ev(() => { const f = window.__chibarti.CB.sim.S.lastFiles; return f && f.to && f.to.join(',') === 'b1,b2,c1' && !window.__chibarti.CB.ui.picked.length; }), 'sent to everyone in the room');
+await ev(() => { const K = window.__chibarti.CB; K.ui.tab = 'text'; K.ui.texts = []; K.render(true); });
+await page.waitForTimeout(200);
+ok(await ev(() => document.getElementById('composer').placeholder === 'הודעה לכל 4 המכשירים בחדר'), 'messages go to everyone');
+await ev(() => { const K = window.__chibarti.CB; K.ui.tab = 'cast'; K.render(true); });
+await page.waitForTimeout(200);
+ok(await ev(() => !!document.querySelector('#screen .banner[data-action="open-room"]')), 'screen sharing: with the main device, can change');
+await ev(() => { const K = window.__chibarti.CB; K.ui.tab = 'home'; K.render(true); });
+await page.click('#link-card [data-action="add-member"]');
+await page.waitForTimeout(400);
+ok(await ev(() => window.__chibarti.CB.screenName() === 'host' && document.querySelector('.bar-top h1').textContent === 'מכשיר נוסף לחדר'), 'add a device: the code page');
+await ev(() => window.__chibarti.CB.sim.set({ host: { on: false, ready: false } }));
+await page.waitForTimeout(300);
+ok(await ev(() => window.__chibarti.CB.screenName() === 'home'), 'back home when the device came in');
+// a member's view
+await ev((r) => { const K = window.__chibarti.CB; K.sim.set({ room: [{ id: 'h1', name: 'Redmi Note 9', host: true }, { id: 'me0', name: 'Galaxy A54', me: true }, { id: 'b2', name: 'הטאבלט של אבא' }],
+  link: { peerId: 'h1', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', host: false, since: Date.now(), quality: 'great' } }); K.render(true); });
+await page.waitForTimeout(300);
+const mc = await ev(() => document.getElementById('link-card').textContent);
+ok(mc.includes('בחדר של Redmi Note 9') && mc.includes('3 מכשירים') && mc.includes('יציאה מהחדר') && !mc.includes('הוספת מכשיר'), 'a member sees the room and can leave it', mc);
+await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.render(true); });
+
 // ---------- remembered devices: one tap on Home or in the list connects without a code ----------
 const DEVS = [{ id: 'b1', name: 'Redmi Note 9', model: 'Xiaomi Redmi Note 9', last: Date.now() - 36e5, since: Date.now() - 9 * 864e5, via: 'wifi-direct' },
   { id: 'c1', name: 'מחשב העבודה', model: 'Windows', last: Date.now() - 864e5, since: Date.now() - 9 * 864e5, via: 'program' }];

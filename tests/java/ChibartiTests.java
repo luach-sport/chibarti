@@ -410,6 +410,7 @@ public class ChibartiTests {
         });
 
         SessionTests.run();
+        RelayTests.run();
 
         System.out.println(passed + " passed, " + failed + " failed");
         if (failed > 0) System.exit(1);

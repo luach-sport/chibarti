@@ -34,6 +34,11 @@ const HISTORY = `K.ui.history = [
   { id: 'h4', dir: 'in', name: 'תמונות טיול.zip', mime: 'application/zip', size: 312000000, status: 'done', peer: 'Redmi Note 9', at: Date.now() - 3 * 3600e3, uri: 'x4' },
   { id: 'h5', dir: 'in', name: 'מצגת לכנס.pptx', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', size: 15400000, status: 'done', peer: 'Redmi Note 9', at: Date.now() - 40 * 60e3, uri: 'x5' }];`;
 const MEDIA = `K.ui.media = { items: [1, 2, 3, 4, 5, 6].map((i) => ({ uri: 'sim://p' + i, name: 'IMG_' + i + '.jpg', size: 2400000 + i * 310000, mime: i === 3 ? 'video/mp4' : 'image/jpeg' })), sel: { 'sim://p1': true, 'sim://p2': true, 'sim://p4': true, 'sim://p5': true } };`;
+const ROOM = `K.sim.set({ mode: 'connected', link: { peerId: 'b1', name: 'Redmi Note 9', model: 'Redmi Note 9', via: 'wifi-direct', kind: 'phone', host: true, since: Date.now() - 754e3, rtt: 9, quality: 'great', state: 'active' },
+  room: [{ id: 'me0', name: 'Galaxy A54', host: true, me: true },
+    { id: 'b1', name: 'Redmi Note 9', model: 'Xiaomi Redmi Note 9', kind: 'phone', via: 'wifi-direct', main: true, state: 'active' },
+    { id: 'b3', name: 'הטאבלט של אבא', model: 'Galaxy Tab A7', kind: 'phone', via: 'wifi-direct', state: 'active' },
+    { id: 'c1', name: 'מחשב העבודה', model: 'Windows', kind: 'pc', via: 'program', state: 'active' }] });`;
 const KNOWN = `K.sim.set({ devices: [
   { id: 'b1', name: 'Redmi Note 9', model: 'Xiaomi Redmi Note 9', last: Date.now() - 3 * 3600e3, since: Date.now() - 9 * 864e5, via: 'wifi-direct' },
   { id: 'b3', name: 'הטאבלט של אבא', model: 'Galaxy Tab A7', last: Date.now() - 2 * 864e5, since: Date.now() - 30 * 864e5, via: 'hotspot' },
@@ -122,6 +127,9 @@ export const SCENES = [
   scene('diag', "ui.tab = 'settings'; K.render(); K.A['open-diag']();", { wait: 900 }),
   scene('settings', CONNECTED + ENV + " ui.tab = 'settings'; K.render();", { wait: 800 }),
   scene('known', KNOWN + " K.render();", { wait: 500 }),
+  scene('room-home', ROOM + " K.render();", { wait: 600 }),
+  scene('room', ROOM + " K.pushView({ name: 'room' });", { wait: 600 }),
+  scene('send-to', ROOM + " ui.tab = 'files'; ui.filesSeg = 'send'; K.render(); K.openSheet('sendTo', { files: [{ uri: 'sim://d1', name: 'הזמנה לחתונה.pdf', size: 1845000 }, { uri: 'sim://d2', name: 'מפה.jpg', size: 2400000 }] });", { wait: 800 }),
   scene('devices', KNOWN + " K.pushView({ name: 'devices' });", { wait: 600 }),
   scene('save-where', ENV + " ui.tab = 'settings'; K.loadEnv().then(() => { K.render(); K.openSheet('saveWhere'); });", { wait: 800 }),
   scene('pc', ENV + " K.A.pc();", { wait: 900 }),
