@@ -32,7 +32,8 @@
       '<div class="pair-main"><h1>' + (pair && mine.name ? PC.esc(PC.pre('מתחברים ל', mine.name)) : 'מחברים את הטלפון') + '</h1>' +
       '<ol class="steps"><li>בטלפון פותחים את <b>חיברתי</b> ולוחצים <b>חיבור למחשב</b></li>' +
       (pair ? '<li>זהו. המחשב מתחבר לבד כשהטלפון נמצא ברשת</li>' : '<li>לוחצים <b>יש לך את תוכנת חיברתי במחשב?</b> וסורקים את הקוד שכאן</li>') + '</ol>' +
-      '<div class="found"><h3>' + (P.found.length ? 'טלפונים ברשת' : busy ? 'מתחבר…' : 'מחפש את הטלפון ברשת…') + '</h3>' + (found ? '<ul>' + found + '</ul>' : '<p class="note"><i class="spin"></i>המחשב והטלפון צריכים להיות על אותו Wi-Fi. אין Wi-Fi? מחברים את המחשב לרשת של הטלפון (השם והסיסמה כתובים בטלפון).</p>') + '</div>' +
+      '<div class="found"><h3>' + (P.found.length ? 'טלפונים ברשת' : busy ? 'מתחבר…' : 'מחפש את הטלפון ברשת…') + '</h3>' + (found ? '<ul>' + found + '</ul>' : '<p class="note"><i class="spin"></i>המחשב והטלפון צריכים להיות על אותו Wi-Fi.</p>') + '</div>' +
+      (found && !(PC.HS && PC.HS.open) ? '' : PC.hotspotBox ? PC.hotspotBox(qr) : '') +
       note + err + '</div>' +
       '<aside class="pair-side qr-side"><div class="qr-box">' + qr(PC.claimQr()) + '</div><p>סורקים בטלפון, מתוך <b>חיבור למחשב</b></p>' +
       '<p class="safe">' + PC.icon('shield', 'sm') + '<span>ישירות בין המחשב לטלפון, בלי אינטרנט, בחיבור מוצפן.</span></p></aside></div>';

@@ -45,7 +45,7 @@
         return x + '<div class="card pad pc-wait"><span class="spin"></span>מכין רשת ישירה למחשב…</div>';
       }
       const a = CB.pcAddress(h);
-      if (h.claim) x += '<div class="notice green">' + icon('check', 'sm') + '<span class="grow"><b>נסרק.</b> התוכנה במחשב מתחברת לבד. אם המחשב לא על אותו Wi-Fi כמו הטלפון, מחברים אותו לרשת שבשלב 1.</span></div>';
+      if (h.claim) x += '<div class="notice green">' + icon('check', 'sm') + '<span class="grow"><b>נסרק.</b> התוכנה במחשב מתחברת לבד. אם המחשב לא על אותו Wi-Fi כמו הטלפון: מחברים את המחשב לרשת שבשלב 1, או מחברים את הטלפון לנקודה החמה של המחשב (בתוכנה: <b>נקודה חמה מהמחשב</b>).</span></div>';
       else x += '<button type="button" class="pc-program" data-action="pc-scan">' + icon('scan') + '<span class="grow"><b>יש לך את תוכנת חיברתי במחשב?</b><span>סורקים את הקוד שבתוכנה, ומדלגים על כל השלבים</span></span>' + icon('chevL', 'sm') + '</button>' +
         '<p class="pc-or">או מהדפדפן, בלי התקנה:</p>';
       const net = h.method === 'l'
@@ -59,7 +59,7 @@
         '<span class="n">4</span><span>מקלידים במחשב את הקוד<span class="pc-pin ltr" id="pc-pin">' + pin(h.pin) + '</span><span class="timer" id="pc-timer">' + timer(h) + '</span></span>' +
         '<span class="n">5</span><span>כאן מאשרים, וזהו</span></div></div>';
       if (a.other.length) x += '<div class="notice gray">' + icon('wifi', 'sm') + '<span class="grow">המחשב כבר על אותו Wi-Fi כמו הטלפון? מדלגים על שלב 1 וכותבים <b class="ltr">' + esc(a.other[0]) + '</b></span></div>';
-      if (h.method !== 'l') x += '<p class="fine">כל עוד המחשב מחובר לרשת של הטלפון אין בו אינטרנט, אלא אם הוא מחובר גם בכבל.</p>';
+      if (h.method !== 'l') x += '<p class="fine">כל עוד המחשב מחובר לרשת של הטלפון אין בו אינטרנט, אלא אם הוא מחובר גם בכבל. עם תוכנת חיברתי אפשר הפוך: <b>נקודה חמה מהמחשב</b>, הטלפון מתחבר אליה, והאינטרנט במחשב נשאר.</p>';
       x += '<button type="button" class="btn secondary" data-action="stop-host">ביטול</button>';
       if (h.web && h.web.fp) x += '<p class="fine pc-fp">טביעת האבטחה של הטלפון: <span class="ltr">' + esc(h.web.fp) + '</span></p>';
       return x;

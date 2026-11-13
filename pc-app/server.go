@@ -35,6 +35,7 @@ type server struct {
 	ctl      *controller
 	lastBeat atomic.Int64
 	beats    atomic.Int64
+	ourSpot  atomic.Bool // the program turned the computer's hotspot on: off again when it closes
 	version  string
 	openWin  func()
 }
@@ -108,6 +109,38 @@ func (s *server) api(w http.ResponseWriter, r *http.Request) {
 		}
 		s.ctl.on.Store(b.On)
 		w.WriteHeader(204)
+	case "/api/hotspot":
+		// the computer's own hotspot: "on", "off", "state", or "settings" (Windows' page for it)
+		var b struct {
+			Action string `json:"action"`
+		}
+		if r.Method != "POST" || json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&b) != nil {
+			http.Error(w, "bad", 400)
+			return
+		}
+		if b.Action == "settings" {
+			if err := openHotspotSettings(); err != nil {
+				writeJSON(w, hotspotInfo{Error: "unsupported"})
+				return
+			}
+			writeJSON(w, hotspotInfo{})
+			return
+		}
+		was := hotspot("state")
+		h := was
+		if b.Action != "state" {
+			h = hotspot(b.Action)
+		}
+		if b.Action == "on" && h.On && !was.On {
+			s.ourSpot.Store(true)
+		}
+		if b.Action == "off" {
+			s.ourSpot.Store(false)
+		}
+		if h.On {
+			go s.finder.scan() // the phone may be on it already
+		}
+		writeJSON(w, h)
 	case "/api/input":
 		body, _ := io.ReadAll(io.LimitReader(r.Body, 64<<10))
 		if r.Method != "POST" || !s.ctl.push(body) {

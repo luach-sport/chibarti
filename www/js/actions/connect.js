@@ -62,6 +62,8 @@
   /** A QR code (camera or a chibarti:// link): start joining and show the progress on Home. */
   CB.joinWith = async (text) => {
     if (/^chibarti:\/\/pc\?/.test(String(text))) { CB.claimPc(text); return; }
+    // The small code of the computer's hotspot (in the Windows program) is for the phone's camera or Wi-Fi settings
+    if (/^WIFI:/i.test(String(text))) { CB.toast('זה קוד של Wi-Fi. סורקים אותו במצלמה של הטלפון או בהגדרות ה-Wi-Fi, ואחר כך כאן את הקוד הגדול שבתוכנה.', 5200); if (CB.screenName() === 'scan') { await CB.sleep(1800); if (CB.screenName() === 'scan') CB.render(); } return; }
     const r = await CB.N.call('join', { qr: text }).catch(() => ({ error: 'unreachable' }));
     if (r && r.error) {
       const msg = CB.joinError(r.error);

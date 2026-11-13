@@ -102,6 +102,15 @@ async function pcProgram(page, arg) {
   await page.evaluate(() => { window.PC.redraw('pair'); });
 }
 
+// The same window with the computer's hotspot on (for a computer whose internet is on Wi-Fi): before the phone joins.
+async function pcHotspot(page) {
+  await page.evaluate(() => {
+    const H = window.PC.HS;
+    Object.assign(H, { open: true, busy: false, on: true, error: '', ssid: 'DESKTOP-DANI 4127', pass: 'r7Kq2m9x' });
+    window.PC.redraw('pair');
+  });
+}
+
 const scene = (name, body, extra) => Object.assign({ name, set: new Function('arg', 'const K = window.__chibarti.CB, ui = K.ui; ' + body) }, extra || {});
 
 export const SCENES = [
@@ -150,5 +159,6 @@ export const SCENES = [
     K.update.info = { version: arg.info.version || '1.0', build: b, notes: (arg.info.notes || []).slice(0, 4), inApp: true };
     K.openSheet('update');`, { wait: 700 }),
   { name: 'pc-page', run: pcPage, wait: 600 },
-  { name: 'pc-program', run: pcProgram, wait: 600 }
+  { name: 'pc-program', run: pcProgram, wait: 600 },
+  { name: 'pc-hotspot', run: pcHotspot, wait: 600 }
 ];

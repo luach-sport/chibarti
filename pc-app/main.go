@@ -66,10 +66,10 @@ func main() {
 	start := time.Now()
 	for range time.Tick(2 * time.Second) {
 		last := s.lastBeat.Load()
-		if last == 0 && time.Since(start) > 2*time.Minute {
-			return
-		}
-		if last != 0 && time.Since(time.UnixMilli(last)) > 15*time.Second {
+		if (last == 0 && time.Since(start) > 2*time.Minute) || (last != 0 && time.Since(time.UnixMilli(last)) > 15*time.Second) {
+			if s.ourSpot.Load() {
+				hotspot("off") // the program turned it on: it goes off with the program
+			}
 			return
 		}
 	}

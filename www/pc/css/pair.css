@@ -45,3 +45,17 @@
 .found li span { color: var(--muted); font-size: 13px; }
 .found .note { display: flex; gap: 10px; align-items: flex-start; }
 .found .note .spin { flex-shrink: 0; margin-top: 3px; color: var(--primary); }
+
+/* the computer's own hotspot (in the program), for a computer whose internet is on Wi-Fi */
+.hs-ask { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--inset); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.hs-ask p, .hs-box p { margin: 0; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.55; }
+.hs-box { margin-top: 14px; padding: 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.hs-box.on { flex-direction: row; align-items: flex-start; border-color: var(--primary); }
+.hs-box .err { color: var(--danger, #B42318); }
+.hs-qr { width: 132px; flex: none; background: #fff; border-radius: 10px; padding: 4px; }
+.hs-qr svg { display: block; width: 100%; height: auto; }
+.hs-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.hs-text p { display: block; }
+.hs-text b.ltr { display: inline-block; max-width: 100%; word-break: break-all; }
+.hs-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ltr { direction: ltr; unicode-bidi: isolate; }

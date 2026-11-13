@@ -75,6 +75,26 @@ await step('the window shows a QR code and finds the phone on the network', asyn
   await shot('20-program-pair');
 });
 
+await step('a computer whose internet is on Wi-Fi: the hotspot helper (only on Windows; here it says so)', async () => {
+  const no = await fetch(BASE + 'api/hotspot', { method: 'POST', body: '{"action":"on"}' });
+  ok(no.status === 403, 'no token: ' + no.status);
+  const r = await (await fetch(BASE + 'api/hotspot', { method: 'POST', headers: { 'X-Chibarti': token }, body: '{"action":"on"}' })).json();
+  ok(r.error === 'unsupported' && !r.on, JSON.stringify(r));
+  await page.evaluate(() => { window.PC.HS.open = false; window.PC.render(); });
+  await page.evaluate(() => window.PC.A['hs-open']());
+  await page.waitForSelector('.hs-box');
+  await page.evaluate(() => window.PC.A['hs-on']());
+  await page.waitForSelector('.hs-box .err');
+  ok((await page.textContent('.hs-box')).includes('נקודה חמה ניידת'), 'the way to do it in Windows');
+  ok(await page.$('.hs-box [data-act="hs-settings"]'), 'a button to Windows settings');
+  // how the code looks when it's on (drawn here from a pretend answer)
+  await page.evaluate(() => { const H = window.PC.HS; H.error = ''; H.on = true; H.ssid = 'DESKTOP-7Q;1 0420'; H.pass = 'aB3:x9,qZ'; window.PC.render(); });
+  ok(await page.$('.hs-box.on .hs-qr svg'), 'Wi-Fi code drawn');
+  ok(await page.evaluate(() => window.PC.wifiQr()) === 'WIFI:T:WPA;S:DESKTOP-7Q\\;1 0420;P:aB3\\:x9\\,qZ;;', 'Wi-Fi code text');
+  await shot('20b-program-hotspot');
+  await page.evaluate(() => { const H = window.PC.HS; H.on = false; H.open = false; window.PC.render(); });
+});
+
 await step('the phone scans the QR code: connected, no code, no approval', async () => {
   const tok = await page.evaluate(() => window.PC_PROGRAM.claim);
   writeFileSync(join(phone.out, 'claim.txt'), tok);

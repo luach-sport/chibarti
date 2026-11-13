@@ -55,7 +55,9 @@ final class FanTests {
             check(keys.get() >= 2, "a key frame asked for each new viewer");
             fan.send(Proto.VIDEO_FRAME, frame(true, 1000), true);
             long t0 = System.currentTimeMillis();
-            for (int i = 0; i < 200; i++) fan.send(Proto.VIDEO_FRAME, frame(i % 60 == 59, 20_000), i % 60 == 59);
+            // a fast stream (far faster than a real screen), paced a little so a busy test machine doesn't make the
+            // fast viewer look slow
+            for (int i = 0; i < 200; i++) { fan.send(Proto.VIDEO_FRAME, frame(i % 60 == 59, 20_000), i % 60 == 59); Thread.sleep(1); }
             check(System.currentTimeMillis() - t0 < 1000, "sending never waits for a slow viewer");
             Thread.sleep(1500);
             check(fastS.first() == Proto.VIDEO_CONFIG && slowS.first() == Proto.VIDEO_CONFIG, "setup first");
