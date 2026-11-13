@@ -24,12 +24,15 @@
     const st = CB.state.settings, env = CB.ui.env || {};
     const audioOk = env.audioCapture !== false;
     return partner() + '<div class="mirror-card">' + art() +
-      '<h2>' + esc(CB.pre('שיתוף המסך שלי ל', CB.peerName())) + '</h2><p>כל מה שעל המסך שלך יופיע אצל ' + esc(CB.peerName()) + ', בזמן אמת. אנדרואיד ישאל פעם אחת לפני שמתחילים.</p>' +
+      (CB.inRoom() ? '<h2>שיתוף המסך שלי</h2><p>לכל ' + CB.roomOthers().length + ' המכשירים בחדר (כל אחד מאשר לבד), או רק ל' + esc(CB.peerName()) + '. אנדרואיד ישאל פעם אחת לפני שמתחילים.</p>'
+        : '<h2>' + esc(CB.pre('שיתוף המסך שלי ל', CB.peerName())) + '</h2><p>כל מה שעל המסך שלך יופיע אצל ' + esc(CB.peerName()) + ', בזמן אמת. אנדרואיד ישאל פעם אחת לפני שמתחילים.</p>') +
       '<span class="section-label" style="margin:0">איכות</span><div class="q-grid" role="group" aria-label="איכות">' +
       CB.QUALITIES.map((q) => '<button type="button" data-action="set-quality" data-v="' + q.v + '" aria-pressed="' + (st.quality === q.v) + '"><b>' + q.label + '</b><small>' + q.sub + '</small></button>').join('') + '</div>' +
       '<div>' + CB.toggleRow('toggle-audio', 'גם הקול', audioOk ? 'הקול של סרטונים, משחקים ומוזיקה. שיחות ואפליקציות מוגנות נשארות שקטות.' : 'שיתוף קול אפשרי מאנדרואיד 10. כאן יעבור רק המסך.', audioOk && st.audio, audioOk ? '' : ' aria-disabled="true"') +
       CB.toggleRow('toggle-auto', 'איכות אוטומטית', 'יורדת לבד כשהחיבור חלש ועולה כשהוא חוזר, כדי שהתמונה תישאר חיה', st.auto) + '</div>' +
-      '<button type="button" class="btn" data-action="mirror-start">' + icon('cast') + 'התחלת שיתוף</button></div>' +
+      (CB.inRoom() ? '<button type="button" class="btn" data-action="mirror-start" data-all="1">' + icon('phones') + 'שיתוף לכל החדר</button>' +
+        '<button type="button" class="btn secondary" data-action="mirror-start">' + icon('cast') + esc(CB.pre('רק ל', CB.peerName())) + '</button>'
+        : '<button type="button" class="btn" data-action="mirror-start">' + icon('cast') + 'התחלת שיתוף</button>') + '</div>' +
       '<div class="notice gray">' + icon('info', 'sm') + '<span class="grow">רוצים לראות את המסך של ' + esc(CB.peerName()) + '? לוחצים שם "התחלת שיתוף", וכאן מופיעה בקשה לצפייה.</span></div>';
   }
 
@@ -41,8 +44,24 @@
 
   const AUDIO = { on: 'הקול משותף גם הוא.', off: 'בלי קול.', unsupported: 'שיתוף קול אפשרי רק מאנדרואיד 10.', 'no-permission': 'בלי קול: לא ניתן אישור למיקרופון (כך אנדרואיד קורא לשיתוף קול).', failed: 'הקול לא זמין כרגע במכשיר הזה.' };
 
+  // In a room: how many watch (on the host), and the host passing a member's screen on.
+  const roomLine = (m) => {
+    const r = m.room;
+    if (r && !r.from) return r.viewers + (r.viewers === 1 ? ' צופה' : ' צופים') + (r.asked ? ' · עוד ' + r.asked + ' לא ענו' : '');
+    return m.all ? 'לכל החדר, דרך ' + CB.peerName() : '';
+  };
+
   function live(m) {
+    if (m.role === 'relaying') {
+      const r = m.room || {};
+      return '<div class="live-card"><div class="top-line"><span class="rec"></span><h2>' + esc(r.from || 'מכשיר בחדר') + ' משתף את המסך לחדר</h2></div>' +
+        '<p class="note">המסך עובר דרך הטלפון הזה ל-' + (r.viewers || 0) + (r.viewers === 1 ? ' מכשיר' : ' מכשירים') + (r.asked ? ' (עוד ' + r.asked + ' לא ענו)' : '') + '. הטלפון הזה לא מציג אותו.</p><div style="flex:1"></div>' +
+        '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('stop') + 'הפסקה לכולם</button></div>';
+    }
     if (m.role === 'offering') {
+      if (m.all) return '<div class="live-card"><div class="top-line"><span class="rec" style="background:var(--sun)"></span><h2>מחכה שיאשרו בחדר</h2></div>' +
+        '<p class="note">הבקשה הופיעה בכל המכשירים. ברגע שמישהו מאשר, המסך שלך מופיע אצלו.</p><div style="flex:1"></div>' +
+        '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('close') + 'ביטול</button></div>';
       return '<div class="live-card"><div class="top-line"><span class="rec" style="background:var(--sun)"></span><h2>' + esc(CB.pre('מחכה שיאשרו ב', CB.peerName())) + '</h2></div>' +
         '<p class="note">הבקשה הופיעה בטלפון השני. כשיאשרו שם, המסך שלך יופיע אצלם.</p><div style="flex:1"></div>' +
         '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('close') + 'ביטול</button></div>';
@@ -52,13 +71,15 @@
       const banner = ctl === 'controlled'
         ? '<div class="notice warn ctl-on">' + icon('hand', 'sm') + '<span class="grow"><b>' + esc(CB.peerName()) + ' שולט בטלפון שלך</b><br>לוחץ, גולל וכותב כאן.</span><button type="button" class="btn small" data-action="control-stop">עצירה</button></div>'
         : ctl === 'asked' || ctl === 'install' || ctl === 'setup' ? '<div class="notice gray">' + icon('hand', 'sm') + '<span class="grow">' + esc(CB.peerName()) + ' מבקש לשלוט בטלפון</span><button type="button" class="btn small secondary" data-action="open-sheet" data-sheet="control">לבקשה</button></div>' : '';
-      return banner + '<div class="live-card"><div class="top-line"><span class="rec"></span><h2>המסך שלך אצל ' + esc(CB.peerName()) + '</h2></div>' +
+      return banner + '<div class="live-card"><div class="top-line"><span class="rec"></span><h2>' + (m.all ? 'המסך שלך אצל כל החדר' : 'המסך שלך אצל ' + esc(CB.peerName())) + '</h2></div>' +
+        (m.all ? '<p class="note" id="mroom">' + esc(roomLine(m)) + '</p>' : '') +
         '<div class="stats" id="mstats">' + statsHtml(m) + '</div><p class="note" id="mnote">' + esc(AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '') + '</p>' +
         '<button type="button" class="hbtn" data-action="mirror-stop">' + icon('stop') + 'עצירת השיתוף</button></div>' +
-        '<p class="fine">אפשר לצאת מחיברתי ולהשתמש בטלפון כרגיל: הכל ממשיך להופיע אצל ' + esc(CB.peerName()) + '. לעצירה: כאן או מההתראה.</p>';
+        '<p class="fine">אפשר לצאת מחיברתי ולהשתמש בטלפון כרגיל: הכל ממשיך להופיע ' + (m.all ? 'אצל כל מי שצופה' : 'אצל ' + esc(CB.peerName())) + '. לעצירה: כאן או מההתראה.</p>';
     }
     if (m.role === 'viewing' || m.role === 'asked') {
-      return '<div class="live-card"><div class="top-line"><span class="rec" style="background:var(--sun)"></span><h2>' + (m.role === 'asked' ? esc(CB.peerName()) + ' רוצה להראות לך את המסך' : 'צופה במסך של ' + esc(CB.peerName())) + '</h2></div>' +
+      const who = (m.request && m.request.name) || (m.room && m.room.from) || CB.peerName();
+      return '<div class="live-card"><div class="top-line"><span class="rec" style="background:var(--sun)"></span><h2>' + (m.role === 'asked' ? esc(who) + ' רוצה להראות לך את המסך' : 'צופה במסך של ' + esc(who)) + '</h2></div>' +
         '<p class="note">' + (m.role === 'asked' ? 'מאשרים כדי לצפות.' : 'המסך פתוח במסך מלא. אם יצאת ממנו, חוזרים בכפתור.') + '</p><div style="flex:1"></div>' +
         (m.role === 'asked' ? '<button type="button" class="hbtn soft" data-action="open-sheet" data-sheet="mirrorAsk">לבקשה</button>'
           : '<button type="button" class="hbtn soft" data-action="open-viewer">' + icon('eye') + 'חזרה לצפייה</button><button type="button" class="hbtn" data-action="mirror-stop">' + icon('stop') + 'הפסקת הצפייה</button>') + '</div>';
@@ -74,10 +95,10 @@
       if (m.error === 'capture') h += '<div class="notice warn">' + icon('alert', 'sm') + '<span class="grow">צילום המסך לא הצליח במכשיר הזה. נסו איכות נמוכה יותר.</span></div>';
       return h + (m.role === 'none' ? idle() : live(m));
     },
-    sig: () => { const m = CB.L().mirror || {}; return [CB.connected(), CB.inRoom(), m.role, m.role === 'sending' ? m.state : '', m.error, CB.peerName(), CB.ui.env && CB.ui.env.audioCapture, (CB.L().control || {}).role].join('|'); },
+    sig: () => { const m = CB.L().mirror || {}; return [CB.connected(), CB.inRoom(), m.role, m.role === 'relaying' && m.room ? m.room.viewers + '/' + m.room.asked : '', m.role === 'sending' ? m.state : '', m.error, CB.peerName(), CB.ui.env && CB.ui.env.audioCapture, (CB.L().control || {}).role].join('|'); },
     live: () => {
       const m = CB.L().mirror || {};
-      if (m.role === 'sending') { CB.part('mstats', statsHtml(m)); CB.setText('mnote', (AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '')); }
+      if (m.role === 'sending') { CB.part('mstats', statsHtml(m)); CB.setText('mnote', (AUDIO[m.audio] || '') + (m.state !== 'live' ? ' מתחבר…' : '')); if (m.all) CB.setText('mroom', roomLine(m)); }
     }
   };
 })();

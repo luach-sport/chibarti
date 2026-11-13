@@ -129,6 +129,7 @@ export const SCENES = [
   scene('known', KNOWN + " K.render();", { wait: 500 }),
   scene('room-home', ROOM + " K.render();", { wait: 600 }),
   scene('room', ROOM + " K.pushView({ name: 'room' });", { wait: 600 }),
+  scene('room-cast', ROOM + " K.sim.set({ mirror: { role: 'sending', state: 'live', all: true, room: { viewers: 3, asked: 0, from: '', watching: false }, width: 720, height: 1600, fps: 30, kbps: 2900, bitrate: 3000, audio: 'on', quality: 'standard' } }); ui.tab = 'cast'; K.render();", { wait: 700 }),
   scene('send-to', ROOM + " ui.tab = 'files'; ui.filesSeg = 'send'; K.render(); K.openSheet('sendTo', { files: [{ uri: 'sim://d1', name: 'הזמנה לחתונה.pdf', size: 1845000 }, { uri: 'sim://d2', name: 'מפה.jpg', size: 2400000 }] });", { wait: 800 }),
   scene('devices', KNOWN + " K.pushView({ name: 'devices' });", { wait: 600 }),
   scene('save-where', ENV + " ui.tab = 'settings'; K.loadEnv().then(() => { K.render(); K.openSheet('saveWhere'); });", { wait: 800 }),

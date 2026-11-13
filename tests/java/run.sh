@@ -9,11 +9,11 @@ mkdir -p "$WORK/out"
 if [ ! -d "$JSON/src/main/java/org/json" ]; then
   git clone -q --depth 1 https://github.com/stleary/JSON-java.git "$JSON"
 fi
-PURE="Link Crypto SecureLink Handshake Proto Pairing QrPayload OutgoingJob IncomingJob RateControl Tls WsLink WebServer Session NetSeal Diag Relay"
+PURE="Link Crypto SecureLink Handshake Proto Pairing QrPayload OutgoingJob IncomingJob RateControl Tls WsLink WebServer Session NetSeal Diag Relay StreamFan"
 SRC=()
 for c in $PURE; do SRC+=("$ROOT/android-native/$c.java"); done
 rm -rf "$WORK/out" && mkdir -p "$WORK/out"
-if ! javac -encoding UTF-8 -nowarn -d "$WORK/out" $(find "$JSON/src/main/java/org/json" -name '*.java') "${SRC[@]}" "$ROOT/tests/java/ChibartiTests.java" "$ROOT/tests/java/SessionTests.java" "$ROOT/tests/java/RelayTests.java" 2> "$WORK/javac.log"; then
+if ! javac -encoding UTF-8 -nowarn -d "$WORK/out" $(find "$JSON/src/main/java/org/json" -name '*.java') "${SRC[@]}" "$ROOT/tests/java/ChibartiTests.java" "$ROOT/tests/java/SessionTests.java" "$ROOT/tests/java/RelayTests.java" "$ROOT/tests/java/FanTests.java" 2> "$WORK/javac.log"; then
   grep -v '^Note:' "$WORK/javac.log"
   exit 1
 fi

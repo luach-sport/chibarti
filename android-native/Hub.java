@@ -209,8 +209,9 @@ final class Hub implements Session.Listener {
     void attach(Session s, Link link) {
         List<Session> drop = new ArrayList<>();
         boolean joinRoom, mainReplaced;
+        Session cur;
         synchronized (this) {
-            Session cur = session;
+            cur = session;
             joinRoom = s.host && cur != null && cur.host && cur.state != Session.CLOSED;
             for (Session m : members) if (m.peerId.equals(s.peerId) || !joinRoom) drop.add(m);
             members.removeAll(drop);
@@ -220,7 +221,7 @@ final class Hub implements Session.Listener {
             if (!s.host) room = new JSONArray();
         }
         for (Session d : drop) d.close("replaced", true);
-        if (mainReplaced) mirror.onClosed();
+        for (Session d : drop) mirror.gone(d, d == cur && mainReplaced);
         s.onDrain = () -> relay.drained(s.peerId);
         s.start(link);
         ids.touch(s.peerId, s.via);
@@ -278,15 +279,15 @@ final class Hub implements Session.Listener {
                 case Proto.OFFER_REPLY: case Proto.FILE_END: case Proto.FILE_ACK: case Proto.CANCEL: case Proto.PAUSE: case Proto.RESUME: case Proto.HOLD:
                     if (!(s.host && relay.handle(s.peerId, f.type, o))) transfers.onControl(s, f.type, o);
                     break;
-                case Proto.MIRROR_OFFER:
-                    // in a room, a member that starts sharing becomes the main connection (when nothing is shared yet)
-                    if (s != session && !setMain(s.peerId)) { s.control(Proto.MIRROR_REPLY, new JSONObject().put("accept", false).put("reason", "busy")); break; }
-                    mirror.onControl(f.type, o);
+                case Proto.MIRROR_OFFER: case Proto.MIRROR_REPLY: case Proto.MIRROR_STOP: case Proto.KEY_REQUEST: case Proto.MIRROR_STATS:
+                    mirror.onControl(s, f.type, o);
                     break;
-                case Proto.MIRROR_REPLY: case Proto.MIRROR_STOP: case Proto.KEY_REQUEST: case Proto.MIRROR_STATS:
-                    if (s == session) mirror.onControl(f.type, o);
+                case Proto.CONTROL_ASK:
+                    // a screen shared with the whole room can't be controlled (whose fingers would it be?)
+                    if (mirror.room.active()) { s.control(Proto.CONTROL_REPLY, new JSONObject().put("accept", false).put("reason", "room")); break; }
+                    if (s == session) control.onMessage(f.type, o);
                     break;
-                case Proto.CONTROL_ASK: case Proto.CONTROL_REPLY: case Proto.CONTROL_STOP: case Proto.INPUT:
+                case Proto.CONTROL_REPLY: case Proto.CONTROL_STOP: case Proto.INPUT:
                     if (s == session) control.onMessage(f.type, o);
                     break;
                 default: break;
@@ -296,13 +297,13 @@ final class Hub implements Session.Listener {
         }
     }
 
-    @Override public void onStreamFrame(Session s, Link.Frame f) { if (s == session) mirror.onStream(f); }
+    @Override public void onStreamFrame(Session s, Link.Frame f) { mirror.onStream(s, f); }
 
     @Override public void onLinkLost(Session s) {
         Diag.log("link", "connection with " + s.peerName + " dropped, " + (s.host ? "waiting for it to come back" : "reconnecting"));
         relay.gone(s.peerId);
         transfers.onLinkLost(s);
-        if (s == session) mirror.onLinkLost();
+        mirror.onLinkLost(s);
         connect.onLinkLost(s);
         notice("reconnecting", s.peerName);
         changed();
@@ -311,7 +312,7 @@ final class Hub implements Session.Listener {
     @Override public void onResumed(Session s) {
         Diag.log("link", "connection with " + s.peerName + " is back");
         transfers.onResumed(s);
-        if (s == session) mirror.onResumed();
+        mirror.onResumed(s);
         notice("resumed", s.peerName);
         changed();
     }
@@ -328,7 +329,7 @@ final class Hub implements Session.Listener {
         transfers.onClosed(s);
         if (!was && !wasMain) return; // replaced by a new connection of the same device
         Diag.log("link", "ended with " + s.peerName + ": " + reason + (empty ? "" : " (" + members.size() + " still connected)"));
-        if (wasMain) mirror.onClosed();
+        mirror.gone(s, wasMain);
         if (empty) {
             room = new JSONArray();
             connect.onSessionClosed(s, reason);

@@ -351,7 +351,7 @@ public class ChibartiPlugin extends Plugin {
         JSONObject o = new JSONObject();
         try {
             o.put("quality", call.getString("quality", "standard")).put("fps", call.getInt("fps", 30))
-                .put("audio", call.getBoolean("audio", true)).put("auto", call.getBoolean("auto", true));
+                .put("audio", call.getBoolean("audio", true)).put("auto", call.getBoolean("auto", true)).put("all", call.getBoolean("all", false));
         } catch (Exception ignored) { }
         LinkService.project(ctx(), result.getResultCode(), result.getData(), o.toString());
         call.resolve(one("ok", true));

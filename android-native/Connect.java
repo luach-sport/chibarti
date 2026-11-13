@@ -378,7 +378,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 return;
             }
             if (r.mode == Handshake.MODE_STREAM) {
-                if (cur != null) { cur.attachStream(r.link); if (cur == hub.session) hub.mirror.onStreamAttached(); } else r.link.close();
+                if (cur != null) { cur.attachStream(r.link); hub.mirror.onStreamAttached(cur); } else r.link.close();
                 return;
             }
             Diag.log("host", "secure connection from " + ip + " (" + modeName(r.mode) + ")");
@@ -425,7 +425,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
                 if (cur != null && cur.state != Session.CLOSED && "pc".equals(cur.kind) && Crypto.same(cur.key, key)) {
                     link.send(Proto.APPROVED, Proto.json(new JSONObject().put("resumed", true)));
                     if ("resume".equals(mode)) cur.replaceMain(link);
-                    else { cur.attachStream(link); if (cur == hub.session) hub.mirror.onStreamAttached(); }
+                    else { cur.attachStream(link); hub.mirror.onStreamAttached(cur); }
                 } else deny(link, "unknown");
                 return;
             }

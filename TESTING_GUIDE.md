@@ -78,6 +78,9 @@ Turn mobile data **off** and keep Wi-Fi **on but not connected** for the "no int
 - [ ] A message from B shows on A and C with B's name; a message from A reaches both.
 - [ ] B → files → "למי לשלוח?" → C: arrives on C through A, checked. "לכולם": A and C each approve.
 - [ ] A room page → "לראשי" on C → screen sharing from A goes to C. "הוצאה" on B → B sees "הוצאת מהחדר".
+- [ ] A → מסך → "שיתוף לכל החדר" → B and C each get the request; both watch with sound. B closes its viewer → C keeps watching.
+- [ ] B (a member) → "שיתוף לכל החדר" → A and C get the request; A says "לא עכשיו", C watches (through A). Stop on B → C's viewer closes.
+- [ ] One slow phone in the room: the others keep a live picture.
 - [ ] C turns Wi-Fi off in the middle of a file from B → B sees it stopped ("החיבור אבד באמצע"), A and B stay connected.
 
 ### Text

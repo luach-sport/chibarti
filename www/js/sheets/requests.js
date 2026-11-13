@@ -42,9 +42,10 @@
     title: () => 'שיתוף מסך',
     render: () => {
       const m = CB.L().mirror || {}, r = m.request || {};
-      const q = CB.QUALITIES.filter((x) => x.v === r.quality)[0];
-      return '<div class="req-head"><span class="avatar">' + icon('cast', 'lg') + '</span><h3>' + esc(CB.peerName()) + ' רוצה להראות לך את המסך שלו</h3>' +
-        '<p>' + (q ? 'איכות ' + q.label + ' (' + q.sub + ')' : '') + (r.audio ? ' · עם קול' : '') + '<br>המסך ייפתח במסך מלא. סוגרים מתי שרוצים.</p></div>' +
+      const q = CB.QUALITIES.filter((x) => x.v === r.quality)[0], who = r.name || CB.peerName();
+      return '<div class="req-head"><span class="avatar">' + icon('cast', 'lg') + '</span><h3>' + esc(who) + ' רוצה להראות לך את המסך שלו' + (r.all ? ' (לכל החדר)' : '') + '</h3>' +
+        '<p>' + (q ? 'איכות ' + q.label + ' (' + q.sub + ')' : '') + (r.audio ? ' · עם קול' : '') + '<br>המסך ייפתח במסך מלא. סוגרים מתי שרוצים.' +
+        (r.all && CB.isRoomHost() ? '<br>גם אם לא צופים כאן, המסך עובר דרך הטלפון הזה למי שכן אישר.' : '') + '</p></div>' +
         '<div class="btn-row"><button type="button" class="btn secondary" data-action="mirror-answer" data-accept="0">לא עכשיו</button><button type="button" class="btn" data-action="mirror-answer" data-accept="1">' + icon('eye') + 'צפייה</button></div>';
     }
   };

@@ -23,11 +23,39 @@ import java.util.ArrayDeque;
  * the connection is behind, so the other phone always sees "now".
  */
 final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
+    /** Where the picture goes: one device's screen connection, or everyone in a room (StreamFan). */
+    interface Sink {
+        /** False when it couldn't go now (no screen connection): the next picture must be a key frame. */
+        boolean send(int type, byte[] body, boolean key);
+        /** Bytes still waiting beyond this sender's own queue (the slowest viewer in a room). */
+        long waiting();
+    }
+
+    /** One device: straight to its screen connection (as between two phones). */
+    static Sink to(final Session s) {
+        return new Sink() {
+            @Override public boolean send(int type, byte[] body, boolean key) {
+                Link st = s.stream;
+                if (st == null) return false;
+                try { st.send(type, body); return true; } catch (Exception e) { s.dropStream(); return false; }
+            }
+            @Override public long waiting() { return 0; }
+        };
+    }
+
+    /** Everyone in a room. */
+    static Sink to(final StreamFan fan) {
+        return new Sink() {
+            @Override public boolean send(int type, byte[] body, boolean key) { fan.send(type, body, key); return true; }
+            @Override public long waiting() { return fan.waiting(); }
+        };
+    }
+
     private final Context ctx;
     private final MediaProjection mp;
     private final JSONObject opts;
-    private final Session session;
-    private final Mirror mirror;
+    private final Sink out;
+    private final Runnable ended;
     private HandlerThread ht;
     private Handler h;
     private VirtualDisplay vd;
@@ -46,12 +74,13 @@ final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
     private int framesSec = 0, bytesSec = 0, fpsNow = 0, kbpsNow = 0;
     private long secStart = 0;
 
-    ScreenSender(Context c, MediaProjection mp, JSONObject opts, Session s, Mirror m) {
+    /** ended: Android stopped the capture (the user tapped "stop" in its notification). */
+    ScreenSender(Context c, MediaProjection mp, JSONObject opts, Sink out, Runnable ended) {
         this.ctx = c;
         this.mp = mp;
         this.opts = opts;
-        this.session = s;
-        this.mirror = m;
+        this.out = out;
+        this.ended = ended;
     }
 
     private static int shortSide(String quality) {
@@ -123,7 +152,7 @@ final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
         startAudio();
     }
 
-    private void mirrorStop() { new Handler(android.os.Looper.getMainLooper()).post(() -> mirror.stop(true)); }
+    private void mirrorStop() { new Handler(android.os.Looper.getMainLooper()).post(ended); }
 
     private void startAudio() {
         if (!opts.optBoolean("audio", true)) { audioState = "off"; return; }
@@ -164,6 +193,9 @@ final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
         push(Proto.VIDEO_FRAME, Proto.media(key ? 1 : 0, ptsUs, data, 0, data.length), key, false);
     }
 
+    /** Waiting bytes: this sender's queue plus what the viewers still have to take (in a room). */
+    private long congestion() { return qBytes + out.waiting(); }
+
     @Override public void audioConfig(int rate, int channels, byte[] csd) {
         byte[] body = Proto.config(rate, channels, csd, null);
         lastAudioConfig = body;
@@ -176,15 +208,16 @@ final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
         long now = System.currentTimeMillis();
         int newRate;
         synchronized (q) {
+            long behind = congestion();
             if (type == Proto.VIDEO_FRAME) {
                 if (needKey && !key) { rc.dropped(); askKey(now); return; }
-                if (!key && qBytes > rc.dropThreshold()) { needKey = true; rc.dropped(); askKey(now); return; }
+                if (!key && behind > rc.dropThreshold()) { needKey = true; rc.dropped(); askKey(now); return; }
                 if (key) needKey = false;
-            } else if (type == Proto.AUDIO_FRAME && qBytes > rc.dropThreshold() * 2) return;
-            q.add(new Object[] { type, body });
+            } else if (type == Proto.AUDIO_FRAME && behind > rc.dropThreshold() * 2) return;
+            q.add(new Object[] { type, body, key });
             qBytes += body.length;
             q.notifyAll();
-            newRate = type == Proto.VIDEO_FRAME ? rc.tick(now, qBytes) : 0;
+            newRate = type == Proto.VIDEO_FRAME ? rc.tick(now, congestion()) : 0;
         }
         if (newRate > 0) { VideoEncoder e = enc; if (e != null) e.setBitrate(newRate); }
     }
@@ -206,18 +239,12 @@ final class ScreenSender implements VideoEncoder.Out, AudioSender.Out {
                 o = q.poll();
                 qBytes -= ((byte[]) o[1]).length;
             }
-            Link st = session.stream;
             int type = (Integer) o[0];
             byte[] body = (byte[]) o[1];
-            if (st == null) { if (type == Proto.VIDEO_FRAME) synchronized (q) { needKey = true; } continue; }
-            try {
-                st.send(type, body);
+            if (out.send(type, body, (Boolean) o[2])) {
                 if (type == Proto.VIDEO_FRAME) { framesSec++; }
                 bytesSec += body.length;
-            } catch (Exception e) {
-                session.dropStream();
-                synchronized (q) { needKey = true; }
-            }
+            } else if (type == Proto.VIDEO_FRAME) synchronized (q) { needKey = true; }
             long now = System.currentTimeMillis();
             if (now - secStart >= 1000) {
                 fpsNow = (int) (framesSec * 1000L / (now - secStart));

@@ -293,6 +293,25 @@ ok(await ev(() => window.__chibarti.CB.screenName() === 'host' && document.query
 await ev(() => window.__chibarti.CB.sim.set({ host: { on: false, ready: false } }));
 await page.waitForTimeout(300);
 ok(await ev(() => window.__chibarti.CB.screenName() === 'home'), 'back home when the device came in');
+// screen sharing to the whole room
+await ev(() => { const K = window.__chibarti.CB; K.ui.tab = 'cast'; K.render(true); });
+await page.waitForTimeout(200);
+const sc = await ev(() => ({ all: !!document.querySelector('[data-action="mirror-start"][data-all="1"]'), one: document.querySelectorAll('[data-action="mirror-start"]').length, t: document.getElementById('screen').textContent }));
+ok(sc.all && sc.one === 2 && sc.t.includes('לכל 3 המכשירים בחדר'), 'share to the whole room, or only to the main one', sc);
+await noSideScroll('share to the room');
+await ev(() => window.__chibarti.CB.sim.set({ mirror: { role: 'sending', state: 'live', all: true, room: { viewers: 2, asked: 1, from: '', watching: false }, width: 720, height: 1600, fps: 30, kbps: 3100, audio: 'on' } }));
+await page.waitForTimeout(300);
+const ss = await ev(() => document.getElementById('screen').textContent);
+ok(ss.includes('המסך שלך אצל כל החדר') && ss.includes('2 צופים') && ss.includes('עוד 1 לא ענו'), 'sharing to the room: how many watch', ss.slice(0, 200));
+await ev(() => window.__chibarti.CB.sim.set({ mirror: { role: 'relaying', state: '', all: false, room: { viewers: 2, asked: 0, from: 'הטאבלט של אבא', watching: false } } }));
+await page.waitForTimeout(300);
+const rl = await ev(() => document.getElementById('screen').textContent);
+ok(rl.includes('הטאבלט של אבא משתף את המסך לחדר') && rl.includes('ל-2 מכשירים') && rl.includes('הפסקה לכולם'), 'passing a member\'s screen on', rl.slice(0, 200));
+await ev(() => window.__chibarti.CB.sim.set({ mirror: { role: 'asked', state: '', request: { quality: 'standard', audio: true, all: true, name: 'הטאבלט של אבא' } } }));
+await page.waitForTimeout(400);
+ok(await ev(() => window.__chibarti.CB.sheetIs('mirrorAsk') && document.querySelector('.sheet').textContent.includes('הטאבלט של אבא רוצה להראות לך את המסך שלו (לכל החדר)')), 'asked to watch a member\'s screen for the room');
+await ev(() => { const K = window.__chibarti.CB; K.closeSheet(); K.sim.set({ mirror: { role: 'none', state: '', error: '' } }); K.ui.tab = 'home'; K.render(true); });
+
 // a member's view
 await ev((r) => { const K = window.__chibarti.CB; K.sim.set({ room: [{ id: 'h1', name: 'Redmi Note 9', host: true }, { id: 'me0', name: 'Galaxy A54', me: true }, { id: 'b2', name: 'הטאבלט של אבא' }],
   link: { peerId: 'h1', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', host: false, since: Date.now(), quality: 'great' } }); K.render(true); });

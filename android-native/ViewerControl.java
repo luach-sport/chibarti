@@ -214,6 +214,7 @@ final class ViewerControl {
             case "browser": return "שליטה במחשב עובדת רק מתוכנת חיברתי למחשב, לא מהדפדפן";
             case "not-screen": return "כדי לשלוט, במחשב צריך לשתף את כל המסך";
             case "not-sharing": return "השיתוף כבר הסתיים";
+            case "room": return "מסך ששותף לכל החדר אי אפשר לשלוט בו";
             default: return "השליטה לא אושרה";
         }
     }
