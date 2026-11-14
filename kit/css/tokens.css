@@ -1,0 +1,45 @@
+/* Shared colours for every Itzko site (light and dark). Each site's brand.css then sets its own
+   brand colours (--hero, --primary…) and font on top of these. */
+:root {
+  --bg: #F5F6F8;
+  --surface: #FFFFFF;
+  --inset: #E9EBEF;
+  --line: #E3E6EB;
+  --ink: #16181D;
+  --muted: #596070;
+  --primary: #16181D;
+  --primary-text: #16181D;
+  --primary-soft: #EEF0F3;
+  --on-primary: #FFFFFF;
+  --hero: #16181D;
+  --hero-ink: #FFFFFF;
+  --hero-muted: #D6D9DF;
+  --hero-chip: rgba(255, 255, 255, 0.16);
+  --maker-accent: #16181D;
+  --credit-accent: #FFFFFF;
+  --green-text: #1D7A45;
+  --green-soft: #E3F4E5;
+  --amber-text: #8A5A00;
+  --amber-soft: #FFF3D6;
+  --frame: #16181D;
+  --frame-ink: #C9CED6;
+  --shadow: 0 18px 40px -18px rgba(22, 24, 29, 0.35);
+  --font: 'Rubik', 'Heebo', 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+  --font-display: var(--font);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --surface: #1B1E24; --inset: #252932; --line: #2B2F37; --ink: #F1F2F4; --muted: #A3A9B5;
+    --primary-soft: #252932; --green-text: #6FD08E; --green-soft: #183323; --amber-text: #F5C451; --amber-soft: #3A2E12;
+    --frame: #2C313B; --frame-ink: #C9CED6; --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --surface: #1B1E24; --inset: #252932; --line: #2B2F37; --ink: #F1F2F4; --muted: #A3A9B5;
+  --primary-soft: #252932; --green-text: #6FD08E; --green-soft: #183323; --amber-text: #F5C451; --amber-soft: #3A2E12;
+  --frame: #2C313B; --frame-ink: #C9CED6; --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
+}

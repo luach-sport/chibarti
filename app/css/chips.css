@@ -1,0 +1,9 @@
+/* Chips and badges */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip { flex: none; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.chip.sm { min-height: 40px; border-radius: 12px; font-size: 13px; padding: 0 12px; }
+.chip.sm.on { border-color: var(--primary); color: var(--primary-text); background: var(--primary-soft); font-weight: 600; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 99px; background: var(--inset); color: var(--muted); }
+.badge.green { background: var(--green-soft); color: var(--green-text); }
+.badge.red { background: var(--red-soft); color: var(--red-text); }
+.badge.amber { background: var(--amber-soft); color: var(--amber-text); }

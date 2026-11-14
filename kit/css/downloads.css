@@ -1,0 +1,8 @@
+/* Download counts: a line under the download buttons on every app's site, and a chip on the main site's cards. */
+.dl-count { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; align-self: flex-start; color: var(--hero-muted); font-size: 15px; font-weight: 500; }
+.dl-count svg { width: 18px; height: 18px; color: var(--hero-ink); }
+.dl-count b { color: var(--hero-ink); font-weight: 800; }
+.dl-count a { color: var(--hero-muted); font-size: 13px; }
+.hub-dl { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.hub-dl svg { width: 16px; height: 16px; }
+.hub-dl b { color: var(--ink); font-weight: 800; }

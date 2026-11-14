@@ -1,0 +1,14 @@
+/* "Share the site": a friendly band with the button, and the small panel (WhatsApp, Telegram, e-mail, copy)
+   that opens on computers, where the phone's share menu isn't available. */
+.share-band { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: clamp(20px, 4vw, 30px); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 24px; align-items: center; }
+.share-band h2 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; }
+.share-band p { color: var(--muted); font-size: 16px; margin-top: 6px; max-width: 52ch; }
+.share-band .quote { margin-top: 12px; background: var(--primary-soft); color: var(--ink); border-radius: 16px; padding: 12px 14px; font-size: 15px; }
+.share-band .quote .url { display: block; text-align: right; font-weight: 600; color: var(--primary-text); word-break: break-all; }
+.btn.share { background: var(--primary); color: var(--on-primary); }
+.share-wrap { position: relative; display: inline-flex; }
+.share-panel { position: absolute; z-index: 20; top: calc(100% + 8px); inset-inline-start: 0; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; min-width: 220px; }
+.share-panel a, .share-panel button { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 0; background: none; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); text-decoration: none; cursor: pointer; text-align: start; }
+.share-panel a:hover, .share-panel button:hover { background: var(--primary-soft); }
+.share-panel .dot { width: 26px; height: 26px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+.toast-mini { position: fixed; inset: auto 16px 20px 16px; margin: 0 auto; max-width: 360px; background: #16181D; color: #FFFFFF; border-radius: 14px; padding: 12px 16px; text-align: center; font-weight: 600; z-index: 50; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); }

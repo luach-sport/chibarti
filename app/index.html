@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F1F6F6">
+<meta name="description" content="חיברתי – שני טלפוני אנדרואיד מתחברים ישירות, בלי אינטרנט: שיקוף מסך, שליחת קבצים ותמונות והודעות.">
+<title>חיברתי</title>
+<link rel="icon" href="icon.png">
+<script>
+  (function () {
+    var d = document.documentElement;
+    try {
+      var t = localStorage.getItem('chibarti.theme') || 'system';
+      if (t === 'system') t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      d.setAttribute('data-theme', t);
+    } catch (e) { d.setAttribute('data-theme', 'light'); }
+    // Old Android WebViews don't space flex items with "gap": css/compat.css takes over there.
+    try {
+      var f = document.createElement('div');
+      f.style.display = 'flex'; f.style.flexDirection = 'column'; f.style.rowGap = '1px';
+      f.appendChild(document.createElement('div')); f.appendChild(document.createElement('div'));
+      d.appendChild(f);
+      if (f.scrollHeight !== 1) d.className += ' nogap';
+      d.removeChild(f);
+    } catch (e) { /* keep going */ }
+  })();
+</script>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/controls.css">
+<link rel="stylesheet" href="css/lists.css">
+<link rel="stylesheet" href="css/chips.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/connect.css">
+<link rel="stylesheet" href="css/pc.css">
+<link rel="stylesheet" href="css/files.css">
+<link rel="stylesheet" href="css/mirror.css">
+<link rel="stylesheet" href="css/chat.css">
+<link rel="stylesheet" href="css/nav.css">
+<link rel="stylesheet" href="css/sheets.css">
+<link rel="stylesheet" href="css/misc.css">
+<link rel="stylesheet" href="css/compat.css">
+</head>
+<body>
+<div id="app">
+  <main id="screen" tabindex="-1"></main>
+</div>
+<div id="composer-root"></div>
+<nav id="tabs" aria-label="ניווט ראשי">
+  <div class="inner">
+    <button type="button" data-action="tab" data-tab="home" aria-current="page">
+      <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg><span class="dot" aria-hidden="true"></span></span>
+      בית
+    </button>
+    <button type="button" data-action="tab" data-tab="cast">
+      <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 11.5a5 5 0 0 1 5-5M9.5 12a2.5 2.5 0 0 1 2.5-2.5"/></svg><span class="dot" aria-hidden="true"></span></span>
+      מסך
+    </button>
+    <button type="button" data-action="tab" data-tab="files">
+      <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 15l3-3 3 3M12 12v6"/></svg><span class="dot" aria-hidden="true"></span></span>
+      קבצים
+    </button>
+    <button type="button" data-action="tab" data-tab="text">
+      <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/><path d="M8 9h8M8 13h5"/></svg><span class="dot" aria-hidden="true"></span></span>
+      הודעות
+    </button>
+    <button type="button" data-action="tab" data-tab="settings">
+      <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span class="dot" aria-hidden="true"></span></span>
+      הגדרות
+    </button>
+  </div>
+</nav>
+<div id="sheet-root"></div>
+<div id="toast-root" role="status" aria-live="polite"></div>
+<script src="cap-runtime.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="js/version.js"></script>
+<script src="js/core/config.js"></script>
+<script src="js/core/helpers.js"></script>
+<script src="js/core/icons.js"></script>
+<script src="js/core/registry.js"></script>
+<script src="js/core/native.js"></script>
+<script src="js/core/http.js"></script>
+<script src="js/core/network.js"></script>
+<script src="js/core/storage.js"></script>
+<script src="js/core/device.js"></script>
+<script src="js/data/defaults.js"></script>
+<script src="js/data/normalize.js"></script>
+<script src="js/data/state.js"></script>
+<script src="js/link/bridge.js"></script>
+<script src="js/link/perms.js"></script>
+<script src="js/link/qr.js"></script>
+<script src="js/link/scanner.js"></script>
+<script src="js/link/live.js"></script>
+<script src="js/link/room.js"></script>
+<script src="js/ui/toast.js"></script>
+<script src="js/ui/theme.js"></script>
+<script src="js/ui/render.js"></script>
+<script src="js/ui/sheets.js"></script>
+<script src="js/ui/parts.js"></script>
+<script src="js/features/notices.js"></script>
+<script src="js/features/pc-ready.js"></script>
+<script src="js/features/media.js"></script>
+<script src="js/features/swipe-reply.js"></script>
+<script src="js/features/updates.js"></script>
+<script src="js/features/feedback-send.js"></script>
+<script src="js/features/share-app.js"></script>
+<script src="js/views/xfer.js"></script>
+<script src="js/views/home.js"></script>
+<script src="js/views/connect.js"></script>
+<script src="js/views/pc.js"></script>
+<script src="js/views/files.js"></script>
+<script src="js/views/mirror.js"></script>
+<script src="js/views/text.js"></script>
+<script src="js/views/settings.js"></script>
+<script src="js/views/diag.js"></script>
+<script src="js/views/room.js"></script>
+<script src="js/sheets/requests.js"></script>
+<script src="js/sheets/control.js"></script>
+<script src="js/sheets/connect.js"></script>
+<script src="js/sheets/misc.js"></script>
+<script src="js/sheets/save.js"></script>
+<script src="js/sheets/send-to.js"></script>
+<script src="js/sheets/feedback.js"></script>
+<script src="js/sheets/update.js"></script>
+<script src="js/sheets/share-app.js"></script>
+<script src="js/actions/nav.js"></script>
+<script src="js/actions/connect.js"></script>
+<script src="js/actions/files.js"></script>
+<script src="js/actions/mirror.js"></script>
+<script src="js/actions/text.js"></script>
+<script src="js/actions/settings.js"></script>
+<script src="js/actions/feedback.js"></script>
+<script src="js/app/events.js"></script>
+<script src="js/app/start.js"></script>
+</body>
+</html>

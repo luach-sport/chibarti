@@ -1,0 +1,35 @@
+/* Page frame and shared bits (icons, headings, links). Shared by every Itzko site. */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+svg.i.sm { width: 18px; height: 18px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.15; font-family: var(--font-display); }
+p { margin: 0; }
+a { color: var(--primary-text); }
+:focus-visible { outline: 3px solid var(--primary-text); outline-offset: 3px; border-radius: 8px; }
+.ltr { direction: ltr; unicode-bidi: isolate; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); }
+.new-tag { display: inline-block; font-size: 12px; font-weight: 800; color: var(--green-text); background: var(--green-soft); border-radius: 999px; padding: 1px 9px; margin-inline-start: 6px; vertical-align: 2px; }

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>חיברתי במחשב</title>
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/top.css">
+  <link rel="stylesheet" href="css/pair.css">
+  <link rel="stylesheet" href="css/panels.css">
+  <link rel="stylesheet" href="css/screen.css">
+  <link rel="stylesheet" href="css/files.css">
+  <link rel="stylesheet" href="css/chat.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><img src="icon.png" alt="" width="34" height="34"><b>חיברתי</b><span>במחשב</span></div>
+    <div id="status" class="status"></div>
+  </header>
+
+  <main id="pair" class="pair"></main>
+
+  <main id="desk" class="desk" hidden>
+    <section class="panel screen" aria-label="מסך">
+      <div class="panel-head"><h2>מסך</h2><div id="screenTools" class="tools"></div></div>
+      <div id="screenBody" class="panel-body"></div>
+    </section>
+
+    <section class="panel files" aria-label="קבצים">
+      <div class="panel-head"><h2>קבצים</h2><div id="filesTools" class="tools"></div></div>
+      <label id="drop" class="drop" tabindex="0">
+        <input id="pick" type="file" multiple hidden>
+        <span class="drop-ico" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></span>
+        <b>גוררים לכאן קבצים</b><span>או לוחצים לבחירה · כל גודל</span>
+      </label>
+      <div id="filesBody" class="panel-body scroll"></div>
+    </section>
+
+    <section class="panel chat" aria-label="הודעות">
+      <div class="panel-head"><h2>הודעות</h2></div>
+      <div id="msgs" class="msgs scroll"></div>
+      <div id="replyBar" class="reply-bar"></div>
+      <form id="compose" class="compose" autocomplete="off">
+        <textarea id="say" rows="1" placeholder="כתבו הודעה או הדביקו קישור…" dir="auto"></textarea>
+        <button class="send" type="submit" aria-label="שליחה"></button>
+      </form>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer class="foot">חיברתי · בלי אינטרנט, ישירות בין המחשב לטלפון · <b>פותח על ידי Itzko</b></footer>
+
+  <script src="js/core.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/proto.js"></script>
+  <script src="js/sha256.js"></script>
+  <script src="js/link.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/text.js"></script>
+  <script src="js/screen-in.js"></script>
+  <script src="js/screen-out.js"></script>
+  <script src="js/control-out.js"></script>
+  <script src="js/control-in.js"></script>
+  <script src="js/attention.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/ui-status.js"></script>
+  <script src="js/program.js"></script>
+  <script src="js/hotspot.js"></script>
+  <script src="js/ui-program.js"></script>
+  <script src="js/ui-pair.js"></script>
+  <script src="js/ui-screen.js"></script>
+  <script src="js/ui-files.js"></script>
+  <script src="js/ui-chat.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
