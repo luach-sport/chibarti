@@ -31,11 +31,13 @@
       if (ready) box = '<div class="sq" id="qr-sq">' + CB.qrSvg(h.qr) + '</div>';
       else if (h.error && !h.ready) box = '<div class="sq"><div class="wait">' + icon('alert', 'lg') + esc(CB.hostError(h.error)) + '</div></div>';
       else box = '<div class="sq"><div class="wait"><span class="spin"></span>מכין רשת ישירה בין הטלפונים…</div></div>';
+      if (h.remote && !ready) box = '<div class="sq"><div class="wait"><span class="spin"></span>' + esc(CB.pre('מבקש קוד מ', CB.peerName())) + '…</div></div>';
       let x = head(CB.connected() ? 'מכשיר נוסף לחדר' : 'חיבור חדש') + '<div class="qr-stage"><div class="qr-box">' + box + '</div>' +
         '<div class="pin-line"><span class="lbl">או מקלידים את הקוד</span><div class="pin" id="pin">' + pinHtml(ready ? h.pin : '') + '</div>' +
         '<span class="timer" id="qr-timer">' + (ready ? timer(h) : '') + '</span></div>' +
         (ready ? '<span class="via-chip">' + icon(h.method === 'd' ? 'phones' : 'wifi', 'xs') + esc(METHOD[h.method] || '') + (h.network ? ' · <span class="ltr">' + esc(h.network) + '</span>' : '') + '</span>' : '') + '</div>';
       if (ready && h.error) x += '<div class="notice warn">' + icon('info', 'sm') + '<span class="grow">' + esc(CB.hostError(h.error)) + '</span></div>';
+      if (h.remote) x += '<div class="notice">' + icon('info', 'sm') + '<span class="grow">' + esc('זה הקוד של ' + (h.hostName || CB.peerName()) + '. המכשיר החדש מתחבר אליו, ושם מאשרים אותו.') + '</span></div>';
       x += '<div class="card pad"><div class="how">' +
         '<span class="n">1</span><span>בטלפון השני פותחים את חיברתי</span>' +
         '<span class="n">2</span><span>לוחצים "סריקת קוד" ומכוונים אל הקוד, או מקלידים את 6 הספרות מ"חיפוש טלפונים"</span>' +
@@ -45,7 +47,7 @@
       if (ready && h.method === 'd') x += '<p class="fine" style="text-align:center">אם קופצת כאן הודעה של אנדרואיד "הזמנה להתחבר", מאשרים אותה.</p>';
       return x;
     },
-    sig: () => { const h = CB.L().host || {}; return [h.ready, h.qr, h.error, h.method, CB.L().mode].join('|'); },
+    sig: () => { const h = CB.L().host || {}; return [h.ready, h.qr, h.error, h.method, h.remote, CB.L().mode].join('|'); },
     live: () => {
       const h = CB.L().host || {};
       if (!h.ready) return;

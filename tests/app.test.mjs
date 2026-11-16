@@ -317,7 +317,7 @@ await ev((r) => { const K = window.__chibarti.CB; K.sim.set({ room: [{ id: 'h1',
   link: { peerId: 'h1', name: 'Redmi Note 9', model: 'Redmi', via: 'wifi-direct', kind: 'phone', host: false, since: Date.now(), quality: 'great' } }); K.render(true); });
 await page.waitForTimeout(300);
 const mc = await ev(() => document.getElementById('link-card').textContent);
-ok(mc.includes('בחדר של Redmi Note 9') && mc.includes('3 מכשירים') && mc.includes('יציאה מהחדר') && !mc.includes('הוספת מכשיר'), 'a member sees the room and can leave it', mc);
+ok(mc.includes('בחדר של Redmi Note 9') && mc.includes('3 מכשירים') && mc.includes('יציאה מהחדר') && mc.includes('הוספת מכשיר'), 'a member sees the room, can add a device (the host gives the code) and can leave', mc);
 await ev(() => { const K = window.__chibarti.CB; K.sim.reset(); K.render(true); });
 
 // ---------- remembered devices: one tap on Home or in the list connects without a code ----------
@@ -379,6 +379,34 @@ ok(await ev(() => !!document.querySelector('#screen .notice [data-action="save-w
 
 await ev(() => { const K = window.__chibarti.CB; K.state.settings.theme = 'dark'; K.applyTheme(); });
 ok(await ev(() => document.documentElement.getAttribute('data-theme')) === 'dark', 'dark theme');
+
+// a transfer opens in a big window with megabytes, percent and every file; it updates in place
+await ev(() => { const K = window.__chibarti.CB; K.closeSheet(); K.ui.stack = []; K.sim.set({ mode: 'connected', link: { peerId: 'p1', name: 'Redmi Note 9', kind: 'phone', host: true, since: Date.now(), quality: 'great' }, room: [], mirror: { role: 'none' },
+  transfers: [{ tid: 9, dir: 'out', state: 'sending', peer: 'Redmi Note 9', total: 50000000, done: 20000000, speed: 4e6, eta: 8, startedAt: Date.now(), files: [{ fid: 1, name: 'סרט משפחתי.mp4', mime: 'video/mp4', size: 50000000, done: 20000000, state: 1 }] }] }); K.ui.tab = 'files'; K.ui.filesSeg = 'send'; K.render(true); });
+await page.waitForTimeout(300);
+await page.click('#xf-9 .name');
+await page.waitForTimeout(300);
+const xd = await ev(() => window.__chibarti.CB.sheetIs('xfer') && document.querySelector('.sheet').textContent);
+ok(xd && xd.includes('40%') && xd.includes('מתוך') && xd.includes('סרט משפחתי.mp4'), 'a transfer opens in a big window', xd);
+await ev(() => window.__chibarti.CB.sim.set({ transfers: [{ tid: 9, dir: 'out', state: 'sending', peer: 'Redmi Note 9', total: 50000000, done: 45000000, speed: 4e6, eta: 1, startedAt: Date.now(), files: [{ fid: 1, name: 'סרט משפחתי.mp4', mime: 'video/mp4', size: 50000000, done: 45000000, state: 1 }] }] }));
+await page.waitForTimeout(500);
+ok(await ev(() => document.getElementById('xd-pct').textContent) === '90%', 'the big window follows the transfer');
+await ev(() => window.__chibarti.CB.closeSheet());
+
+// watching in the small window: a pill brings the big view back, the app stays usable
+await ev(() => { const K = window.__chibarti.CB; K.sim.set({ mirror: { role: 'viewing', state: 'live', peer: 'Redmi Note 9' } }); K.ui.tab = 'home'; K.render(true); });
+await page.waitForTimeout(400);
+ok(await ev(() => { const p = document.querySelector('#watch-pill [data-action="open-viewer"]'); return !!p && p.textContent.includes('Redmi Note 9'); }), 'back-to-watching pill while watching');
+await ev(() => { const K = window.__chibarti.CB; K.sim.set({ mirror: { role: 'none' }, transfers: [] }); K.render(true); });
+await page.waitForTimeout(400);
+ok(await ev(() => !document.getElementById('watch-pill')), 'pill gone when watching ended');
+
+// a phone that joined: "add a device" shows the code that the room's host sent
+await ev(() => { const K = window.__chibarti.CB; K.sim.set({ link: { peerId: 'h1', name: 'Galaxy A54', kind: 'phone', host: false, since: Date.now(), quality: 'great' },
+  host: { on: true, ready: true, remote: true, hostName: 'Galaxy A54', qr: 'chibarti://join?v=1&i=x', pin: '482913', expiresAt: Date.now() + 500000, method: 'd', network: 'DIRECT-k7' } }); K.ui.stack = [{ name: 'host' }]; K.render(); });
+await page.waitForTimeout(300);
+ok(await ev(() => document.getElementById('pin').textContent.replace(/\s/g, '') === '482913' && document.querySelector('#screen').textContent.includes('זה הקוד של Galaxy A54')), 'a member shows the host\'s code for one more device');
+await ev(() => { const K = window.__chibarti.CB; K.ui.stack = []; K.sim.set({ host: { on: false, ready: false, method: 'd', error: '' }, mode: 'idle', link: null }); K.render(); });
 
 ok(errors.length === 0, 'no page errors', errors);
 console.log(passed + ' passed, ' + failed + ' failed');

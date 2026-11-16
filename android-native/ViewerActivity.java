@@ -1,10 +1,14 @@
 package com.luachsport.chibarti;
 
 import android.app.Activity;
+import android.app.PictureInPictureParams;
+import android.content.res.Configuration;
+import android.util.Rational;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,7 +26,10 @@ import android.widget.TextView;
 
 /**
  * Full-screen view of the other phone's screen. The picture keeps its shape (black bars where needed) and
- * follows when the other phone turns. Tap to show the bar (name, quality, delay, rotate, close); it hides by itself.
+ * follows when the other phone turns. Tap to show the bar (name, quality, delay, minimize, rotate, close); it hides by itself.
+ * Minimize (and the back button) keeps watching: on Android 8+ the screen shrinks to a small floating window over the
+ * app (tap it to make it big again); on older phones the view closes but the sharing goes on, and "back to watching"
+ * in the app opens it again. Only ✕ ends the watching.
  */
 public class ViewerActivity extends Activity implements MirrorRx.Viewer, SurfaceHolder.Callback {
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -78,6 +85,7 @@ public class ViewerActivity extends Activity implements MirrorRx.Viewer, Surface
         bar.addView(texts, new LinearLayout.LayoutParams(0, -2, 1));
         TextView ctl = button("☝", "שליטה", v -> { control.toggle(); showBar(); });
         bar.addView(ctl);
+        bar.addView(button("▁", "הקטנה", v -> minimize()));
         bar.addView(button("⟳", "סיבוב", v -> rotate()));
         bar.addView(button("✕", "סגירה", v -> close()));
         root.addView(bar, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
@@ -146,7 +154,54 @@ public class ViewerActivity extends Activity implements MirrorRx.Viewer, Surface
         finish();
     }
 
-    @Override public void onBackPressed() { close(); }
+    @Override public void onBackPressed() { minimize(); }
+
+    private boolean pip = false, minimized = false;
+
+    /** Keeps the sharing going and goes back to the app (a small floating window where Android allows it). */
+    private void minimize() {
+        if (Build.VERSION.SDK_INT >= 26 && getPackageManager().hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            try {
+                Proto.Config c = vcfg;
+                PictureInPictureParams.Builder b = new PictureInPictureParams.Builder();
+                if (c != null && c.a > 0 && c.b > 0) {
+                    // Android accepts between 1:2.39 and 2.39:1
+                    float r = c.a / (float) c.b;
+                    if (r < 0.42f) b.setAspectRatio(new Rational(42, 100));
+                    else if (r > 2.38f) b.setAspectRatio(new Rational(238, 100));
+                    else b.setAspectRatio(new Rational(c.a, c.b));
+                }
+                if (enterPictureInPictureMode(b.build())) { openApp(); return; }
+            } catch (Exception e) { android.util.Log.w("Chibarti", "pip", e); }
+        }
+        minimized = true;
+        closing = true; // not "stop watching"
+        openApp();
+        finish();
+    }
+
+    /** The app's own screen comes forward (its "back to watching" button opens this view again). */
+    private void openApp() {
+        try {
+            android.content.Intent i = new android.content.Intent(this, MainActivity.class);
+            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(i);
+        } catch (Exception ignored) { }
+    }
+
+    @Override public void onPictureInPictureModeChanged(boolean in, Configuration c) {
+        super.onPictureInPictureModeChanged(in, c);
+        pip = in;
+        if (in) { ui.removeCallbacks(hideBar); bar.setVisibility(View.GONE); if (control != null) control.pause(); }
+        else { showBar(); if (control != null) control.resume(); askKey(true); }
+        root.post(this::fit);
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
+        // the small window was swiped away (or closed with its ✕): the sharing goes on, the app can open it again
+        if (pip && !isFinishing()) { closing = true; finish(); }
+    }
 
     /** The picture as large as possible with its own shape. */
     private void fit() {

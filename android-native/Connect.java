@@ -76,6 +76,8 @@ final class Connect implements Server.Gate, WifiDirect.Events {
     // ---------- hosting ----------
     void host() {
         if (hub.isHost()) { addMember(); return; }
+        // joined someone: the room is on that phone, so ask it for the code instead of starting a new network here
+        if (hub.invite.askHost(true)) return;
         synchronized (this) {
             if (hosting) return;
             hosting = true;
@@ -230,6 +232,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
 
     /** Stops offering a connection (keeps the network if a phone is already connected through it). */
     void stopHost() {
+        if (!hosting && hub.invite.waiting()) { hub.invite.askHost(false); return; }
         Session s = hub.session;
         boolean keepNet = s != null && s.host && s.state != Session.CLOSED;
         synchronized (this) {
@@ -332,6 +335,7 @@ final class Connect implements Server.Gate, WifiDirect.Events {
             for (Request r : requests.values()) req.put(new JSONObject().put("rid", r.rid).put("name", r.name).put("model", r.model).put("via", r.via).put("kind", r.kind).put("at", r.at));
             s.put("requests", req);
         }
+        if (!host.optBoolean("on")) hub.invite.describe(host);
         s.put("host", host);
         joiner.describe(s);
     }

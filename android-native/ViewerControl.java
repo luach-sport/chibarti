@@ -147,7 +147,7 @@ final class ViewerControl {
 
     /** One finger on the picture = the same finger on the other screen (sent when it lifts, with its timing). */
     private boolean touch(MotionEvent e) {
-        if (!"controlling".equals(role)) return false;
+        if (!"controlling".equals(role) || paused) return false;
         float w = Math.max(1, sv.getWidth()), h = Math.max(1, sv.getHeight());
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
@@ -186,6 +186,13 @@ final class ViewerControl {
     }
 
     private static double r(float v) { return Math.round(Math.max(0, Math.min(1, v)) * 10000) / 10000.0; }
+
+    private boolean paused = false;
+
+    /** The small floating window: no touches passed on and no control bars (they come back when it's big again). */
+    void pause() { paused = true; bottomBar.setVisibility(View.GONE); if (typing.getVisibility() == View.VISIBLE) toggleTyping(); }
+
+    void resume() { paused = false; bottomBar.setVisibility("controlling".equals(role) ? View.VISIBLE : View.GONE); }
 
     /** The "שליטה" button: ask, or stop. */
     void toggle() {

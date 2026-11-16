@@ -20,7 +20,7 @@
       case 'sending': case 'receiving':
         if (t.peerPaused) return pct + '% · הושהה בטלפון השני';
         if (t.held) return pct + '% · ' + CB.pre('מחכה ש', t.peer || 'המכשיר השני') + ' יקלוט';
-        return [pct + '%', compact ? '' : CB.bytes(t.done) + ' מתוך ' + CB.bytes(t.total), CB.speed(t.speed), CB.eta(t.eta)].filter(Boolean).join(' · ');
+        return [pct + '%', CB.bytes(t.done) + (t.total > 0 ? ' מתוך ' + CB.bytes(t.total) : ''), compact ? '' : CB.speed(t.speed), compact ? '' : CB.eta(t.eta)].filter(Boolean).join(' · ');
       case 'paused': return pct + '% · מושהה';
       case 'interrupted': return pct + '% · מחכה שהחיבור יחזור…';
       case 'done': return CB.pre(out ? 'נשלח ל' : 'התקבל מ', t.peer || '') + ' · ' + CB.bytes(t.total) + ' · נבדק';
@@ -45,7 +45,7 @@
     if (active && out && t.state !== 'asking') ctl += '<button type="button" class="icon-btn" data-action="xfer-pause" data-tid="' + t.tid + '" data-on="' + (t.state === 'paused' ? 0 : 1) + '" aria-label="' + (t.state === 'paused' ? 'המשך' : 'השהיה') + '">' + icon(t.state === 'paused' ? 'play' : 'pause', 'sm') + '</button>';
     if (active) ctl += '<button type="button" class="icon-btn" data-action="xfer-cancel" data-tid="' + t.tid + '" aria-label="ביטול">' + icon('close', 'sm') + '</button>';
     if (!active && !out && t.state === 'done' && n === 1 && f.uri) ctl += '<button type="button" class="icon-btn" data-action="file-open" data-uri="' + esc(f.uri) + '" data-mime="' + esc(f.mime) + '" aria-label="פתיחה">' + icon('open', 'sm') + '</button>';
-    let h = '<div class="card xfer" id="xf-' + t.tid + '"><div class="head">' +
+    let h = '<div class="card xfer tap" id="xf-' + t.tid + '" data-action="xfer-open" data-tid="' + t.tid + '" role="button" aria-label="פרטי ההעברה"><div class="head">' +
       '<span class="tile ' + (bad ? 'bad' : out ? 'out' : 'in') + '">' + (n === 1 ? CB.fileIcon(f.mime, f.name) : icon(out ? 'upload' : 'download')) + '</span>' +
       '<span class="grow"><span class="name"><bdi>' + esc(title(t)) + '</bdi></span><span class="meta" id="xm-' + t.tid + '" data-c="' + (compact ? 1 : 0) + '">' + esc(meta(t, compact)) + '</span></span>' +
       (ctl ? '<span class="ctl">' + ctl + '</span>' : '') + '</div>';

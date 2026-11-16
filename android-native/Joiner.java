@@ -348,6 +348,12 @@ final class Joiner implements LanBeacon.Found {
                     j = r == null ? null : new Joined(r, flp.ip, "wifi", net);
                 } else {
                     String pass = fknown;
+                    if (pass == null && (usePin ? fpp.sealPin.isEmpty() : fpp.sealKnown.isEmpty()) && waitNetPart(fpp.address, usePin)) {
+                        if (!usePin) {
+                            pass = NetSeal.open(hub.ids.peerNet(id), fpp.method, fpp.ssid, fpp.sealKnown);
+                            if (pass == null) throw new IOException("need-pin");
+                        }
+                    }
                     if (pass == null && usePin && !fpp.sealPin.isEmpty()) {
                         pass = openWithPin(fpp.address, pin, id);
                         if (pass == null) throw new IOException(cancelled ? "cancelled" : "wrong-code");
@@ -373,6 +379,27 @@ final class Joiner implements LanBeacon.Found {
             }
         });
         return null;
+    }
+
+    static final long NET_WAIT = 8000;
+
+    /**
+     * The phone was picked before the network part of its announcement arrived: ask again and wait for it (up to
+     * 10 seconds) instead of falling back at once to Android's invitation. True when it arrived.
+     */
+    private boolean waitNetPart(String address, boolean pin) throws InterruptedException {
+        Diag.log("join", "waiting for the network details of the other phone's announcement");
+        setStep("network");
+        c.p2p.refreshServices();
+        long until = System.currentTimeMillis() + 10000;
+        while (!cancelled && System.currentTimeMillis() < until) {
+            WifiDirect.Peer p;
+            synchronized (c.p2p.peers) { p = c.p2p.peers.get(address); }
+            if (p != null && !(pin ? p.sealPin : p.sealKnown).isEmpty()) { Diag.log("join", "the network details arrived"); return true; }
+            Thread.sleep(500);
+        }
+        Diag.log("join", "the network details didn't arrive in 10 s, trying Android's invitation");
+        return false;
     }
 
     /**
@@ -461,6 +488,7 @@ final class Joiner implements LanBeacon.Found {
     private void wantTimeout() {
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
             if (wantId.isEmpty()) return;
+            checkWanted(); // a phone seen without its network part is taken after NET_WAIT even if nothing new arrives
             if (System.currentTimeMillis() < wantUntil) { wantTimeout(); return; }
             String n = wantName;
             wantId = "";
@@ -477,7 +505,16 @@ final class Joiner implements LanBeacon.Found {
         if (id.isEmpty() || joining || hub.connected()) return;
         String key = null;
         synchronized (c.beacon.peers) { for (LanBeacon.Peer p : c.beacon.peers.values()) if (id.equals(p.id)) key = "l:" + p.id; }
-        if (key == null) synchronized (c.p2p.peers) { for (WifiDirect.Peer p : c.p2p.peers.values()) if (p.app && id.equals(p.id)) key = "p:" + p.address; }
+        if (key == null) synchronized (c.p2p.peers) {
+            long now = System.currentTimeMillis();
+            for (WifiDirect.Peer p : c.p2p.peers.values()) {
+                if (!p.app || !id.equals(p.id)) continue;
+                // the network part of its announcement comes a moment after the identity: without it only Android's
+                // "invitation" is left, which mostly fails, so wait for it a few seconds
+                if (p.sealKnown.isEmpty() && now - p.idAt < NET_WAIT) continue;
+                key = "p:" + p.address;
+            }
+        }
         if (key == null) return;
         synchronized (this) { if (!id.equals(wantId)) return; wantId = ""; } // found once, connected once
         Diag.log("join", "found the remembered " + wantName + " (" + (key.startsWith("l:") ? "same Wi-Fi" : "Wi-Fi Direct") + ")");

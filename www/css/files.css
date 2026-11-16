@@ -49,3 +49,18 @@
 .st.bad { background: var(--red-soft); color: var(--red-text); }
 .offer-list { max-height: 34vh; overflow-y: auto; }
 .offer-list .row { min-height: 52px; }
+
+/* a transfer opened in a big window (sheets/xfer.js) */
+.xfer.tap { cursor: pointer; }
+.xd-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 4px 0 10px; }
+.xd-pct { font-size: 44px; font-weight: 800; line-height: 1; color: var(--ink); }
+.xd-state { font-size: 14px; font-weight: 700; color: var(--muted); }
+.xd-grid { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; margin: 14px 0; }
+.xd-grid > div { background: var(--inset); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+.xd-grid .lbl { font-size: 12px; color: var(--muted); }
+.xd-grid .v { font-size: 17px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xd-files { max-height: 34vh; overflow-y: auto; display: grid; grid-gap: 10px; gap: 10px; margin-bottom: 12px; }
+.xd-fhead { display: flex; gap: 8px; font-size: 14px; font-weight: 600; }
+.xd-fhead .grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.xd-fsub { font-size: 12px; color: var(--muted); margin: 2px 0 4px; }
+.xd-acts { display: grid; grid-gap: 8px; gap: 8px; }

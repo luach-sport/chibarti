@@ -238,7 +238,7 @@ final class Mirror {
     }
 
     JSONObject describe() throws Exception {
-        JSONObject d = new JSONObject().put("role", role).put("state", state).put("error", error).put("all", all);
+        JSONObject d = new JSONObject().put("role", role).put("state", state).put("error", error).put("all", all).put("peer", "viewing".equals(role) ? MirrorRx.peer : "");
         room.describe(d);
         JSONObject r = request;
         if (r != null) d.put("request", r);

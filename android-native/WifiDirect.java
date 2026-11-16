@@ -45,6 +45,8 @@ final class WifiDirect {
         int status;
         boolean app, owner;
         long seen;
+        /** When its identity announcement first arrived (the network one usually comes a moment later). */
+        volatile long idAt = 0;
         // from the announcement of a hosting Chibarti phone: its port, its network (kind, public name) and the two
         // seals of the network's password (NetSeal)
         volatile int port = Proto.PORT;
@@ -205,6 +207,7 @@ final class WifiDirect {
                 if (txt.containsKey("i")) {
                     part = "identity";
                     p.id = txt.get("i");
+                    if (p.idAt == 0) p.idAt = System.currentTimeMillis();
                     p.name = txt.get("n");
                     try { p.port = Integer.parseInt(txt.get("p")); } catch (Exception e) { p.port = Proto.PORT; }
                 } else if (txt.containsKey("s")) {

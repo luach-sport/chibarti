@@ -37,6 +37,7 @@ final class Hub implements Session.Listener {
     final Control control;
     final Texts texts;
     final Relay relay;
+    final RoomInvite invite;
     /** The main connection: the only one between two devices; in a room, the one screen sharing goes to. */
     volatile Session session;
     /** Every connection (a room's host has several; a device that joined has one, to the host). */
@@ -58,6 +59,7 @@ final class Hub implements Session.Listener {
         mirror = new Mirror(this);
         control = new Control(this);
         texts = new Texts(this);
+        invite = new RoomInvite(this);
         relay = new Relay(new Relay.Out() {
             @Override public void control(String to, int type, JSONObject o) { Session m = member(to); if (m != null && m.state != Session.CLOSED) m.control(type, o); }
             @Override public int bulk(String to, int type, byte[] body) { Session m = member(to); return m == null ? -1 : m.bulkNow(type, body); }
@@ -83,6 +85,7 @@ final class Hub implements Session.Listener {
             synchronized (Hub.this) { emitQueued = false; }
             lastEmit = System.currentTimeMillis();
             Out o = out;
+            try { invite.push(); } catch (Exception e) { android.util.Log.w("Chibarti", "room code", e); }
             if (o != null) o.emit("state", snapshot());
             LinkService.refresh(ctx);
         }, wait);
@@ -270,6 +273,8 @@ final class Hub implements Session.Listener {
                 case Proto.ROOM:
                     if (!s.host) { JSONArray m = o.optJSONArray("members"); room = m == null ? new JSONArray() : m; changed(); }
                     break;
+                case Proto.ROOM_ADD: invite.onAsk(s, o); break;
+                case Proto.ROOM_CODE: invite.onCode(s, o); break;
                 case Proto.OFFER: {
                     String to = o.optString("to", "");
                     if (s.host && !to.isEmpty() && !to.equals(ids.myId()) && member(to) != null && !to.equals(s.peerId)) relay.offer(s.peerId, s.peerName, o, to);
@@ -332,6 +337,7 @@ final class Hub implements Session.Listener {
         mirror.gone(s, wasMain);
         if (empty) {
             room = new JSONArray();
+            invite.clear();
             connect.onSessionClosed(s, reason);
         } else broadcastRoom();
         String code;

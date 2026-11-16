@@ -186,10 +186,8 @@ public class ChibartiPlugin extends Plugin {
     @PluginMethod public void pickFiles(PluginCall call) {
         boolean media = call.getBoolean("media", false);
         Intent i;
-        if (media && Build.VERSION.SDK_INT >= 33) {
-            i = new Intent(MediaStore.ACTION_PICK_IMAGES);
-            i.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, Math.min(100, MediaStore.getPickImagesMaxLimit()));
-        } else {
+        // Android's photo picker gives numbers instead of the files' names, so photos too are picked like files
+        {
             i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             i.addCategory(Intent.CATEGORY_OPENABLE);
             i.setType("*/*");
@@ -216,14 +214,9 @@ public class ChibartiPlugin extends Plugin {
     }
 
     private JSONObject describe(Uri u) {
-        String name = u.getLastPathSegment();
-        long size = -1;
-        try (Cursor c = ctx().getContentResolver().query(u, new String[] { OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE }, null, null, null)) {
-            if (c != null && c.moveToFirst()) {
-                if (!c.isNull(0)) name = c.getString(0);
-                if (!c.isNull(1)) size = c.getLong(1);
-            }
-        } catch (Exception ignored) { }
+        FileNames.Info fi = FileNames.of(ctx(), u);
+        String name = fi.name;
+        long size = fi.size;
         String mime = ctx().getContentResolver().getType(u);
         JSONObject o = new JSONObject();
         try { o.put("uri", u.toString()).put("name", name == null ? "file" : name).put("size", size).put("mime", Saver.mimeOf(name == null ? "" : name, mime)); } catch (Exception ignored) { }

@@ -23,8 +23,8 @@
           '<span class="grow"><span class="t">' + esc(m.name || (pc ? 'מחשב' : 'טלפון')) + tags + '</span><span class="s">' + esc(m.model || '') + (m.via ? ' · ' + esc(CB.viaLabel(m.via)) : '') + '</span></span>' +
           (acts ? '<span class="acts">' + acts + '</span>' : '') + '</div>';
       }).join('') + '</div>';
-      if (host) h += '<button type="button" class="btn" data-action="add-member"' + (CB.roomCount() >= 8 ? ' aria-disabled="true"' : '') + '>' + icon('plus') + 'הוספת מכשיר</button>' +
-        '<p class="fine" style="text-align:center">עד 7 מכשירים מחוברים לטלפון הזה, כל אחד מאשרים פעם אחת.</p>';
+      h += '<button type="button" class="btn" data-action="add-member"' + (CB.roomCount() >= 8 ? ' aria-disabled="true"' : '') + '>' + icon('plus') + 'הוספת מכשיר</button>' +
+        '<p class="fine" style="text-align:center">' + (host ? 'עד 7 מכשירים מחוברים לטלפון הזה, כל אחד מאשרים פעם אחת.' : 'הקוד מגיע ' + esc(CB.pre('מ', CB.peerName())) + ', והאישור של המכשיר החדש נעשה שם.') + '</p>';
       return h + '<button type="button" class="btn ghost" data-action="disconnect">' + icon('unlink') + (host ? 'סגירת החדר' : 'יציאה מהחדר') + '</button>';
     },
     sig: () => JSON.stringify(CB.L().room || []) + ((CB.L().mirror || {}).role || '')
@@ -37,6 +37,12 @@
     CB.ui.hostFor = 'phone';
     await CB.N.call('host');
     if (CB.screenName() !== 'host') CB.pushView({ name: 'host' });
+    // a phone that joined asks the room's host for the code; an older Chibarti there doesn't answer
+    if (!CB.isRoomHost()) {
+      await CB.sleep(6000);
+      const h = CB.L().host || {};
+      if (h.remote && !h.ready && CB.screenName() === 'host') CB.toast('הקוד לא הגיע. ' + CB.pre('ב', CB.peerName()) + ' מעדכנים את חיברתי, או לוחצים שם "מכשיר נוסף"', 5200);
+    }
   };
   A['room-main'] = (el) => CB.N.call('setMain', { id: el.dataset.id }).catch(() => CB.toast('אפשר להחליף רק כשאין שיתוף מסך'));
   A['room-remove'] = (el) => CB.confirm('הוצאה מהחדר', 'להוציא את ' + (el.dataset.name || 'המכשיר') + ' מהחדר? הוא יוכל להצטרף שוב רק בקוד חדש.', 'הוצאה', () => CB.N.call('removeMember', { id: el.dataset.id }), true);

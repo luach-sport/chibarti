@@ -15,6 +15,8 @@ final class Proto {
     static final int NET_KEY = 8;
     // a room (several devices on one hosting phone): the host tells every member who is in it
     static final int ROOM = 9;
+    // a member asks the room's host for a place for one more device, and the host sends it the code (RoomInvite)
+    static final int ROOM_ADD = 11, ROOM_CODE = 12;
     static final int TEXT = 10;
     static final int OFFER = 20, OFFER_REPLY = 21, CHUNK = 22, FILE_END = 23, FILE_ACK = 24, CANCEL = 25, PAUSE = 26, RESUME = 27;
     // a room's host passing files between two members asks the sender to wait while the receiver catches up

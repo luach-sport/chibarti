@@ -40,7 +40,7 @@
         '<span class="hchip" id="lc-q">' + bars(l.quality) + esc(Q_LABEL[l.quality] || 'בודק קליטה…') + '</span>' +
         '<span class="hchip num" id="lc-since">' + icon('clock', 'xs') + CB.duration(Date.now() - (l.since || Date.now())) + '</span>' +
         '<span class="hchip">' + icon('lock', 'xs') + 'מוצפן</span></div>' +
-        waitingMore(L) + (l.host && l.kind !== 'pc' ? '<div class="acts"><button type="button" class="hbtn ghost" data-action="add-member">' + icon('plus') + 'מכשיר נוסף</button>' : '<div class="acts one">') +
+        waitingMore(L) + (l.kind !== 'pc' ? '<div class="acts"><button type="button" class="hbtn ghost" data-action="add-member">' + icon('plus') + 'מכשיר נוסף</button>' : '<div class="acts one">') +
         '<button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'ניתוק</button></div>';
     }
     if (mode === 'joining') {
@@ -92,7 +92,7 @@
       '<p class="s">הודעות עוברות לכולם, וקבצים לכולם או למכשיר אחד.' + (host ? '' : ' שיתוף מסך: עם ' + esc(CB.peerName()) + '.') + '</p>' +
       '<button type="button" class="chips room-chips" data-action="open-room" aria-label="מי בחדר">' + chips + '</button>' + waitingMore(L) +
       (host ? '<div class="acts"><button type="button" class="hbtn" data-action="add-member">' + icon('plus') + 'הוספת מכשיר</button><button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'סגירת החדר</button></div>'
-        : '<div class="acts one"><button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'יציאה מהחדר</button></div>');
+        : '<div class="acts"><button type="button" class="hbtn" data-action="add-member">' + icon('plus') + 'הוספת מכשיר</button><button type="button" class="hbtn ghost" data-action="disconnect">' + icon('unlink') + 'יציאה מהחדר</button></div>');
   }
 
   // Remembered phones: one tap connects (no code, no approval) once the other phone taps "Start a connection".
