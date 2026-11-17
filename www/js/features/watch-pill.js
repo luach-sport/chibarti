@@ -11,7 +11,7 @@
     let el = document.getElementById('watch-pill');
     const on = m.role === 'viewing';
     if (!on) { if (el) el.remove(); document.body.classList.remove('watching'); return; }
-    const text = 'צופה במסך של ' + (m.peer || CB.peerName() || 'המכשיר השני');
+    const text = CB.pre('צופה ב', m.peer || CB.peerName() || 'מכשיר השני');
     if (!el) {
       el = document.createElement('div');
       el.id = 'watch-pill';

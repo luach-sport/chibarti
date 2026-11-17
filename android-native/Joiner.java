@@ -341,37 +341,44 @@ final class Joiner implements LanBeacon.Found {
         work(() -> {
             try {
                 Joined j;
+                int port = lan ? flp.port : fpp.port;
                 if (lan) {
                     route = "lan";
                     Network net = NetUtil.wifiNetwork(hub.ctx);
                     Handshake.Result r = attempt(flp.ip, flp.port, net, mode, secret, id);
                     j = r == null ? null : new Joined(r, flp.ip, "wifi", net);
                 } else {
+                    WifiDirect.Peer np = fpp;
                     String pass = fknown;
-                    if (pass == null && (usePin ? fpp.sealPin.isEmpty() : fpp.sealKnown.isEmpty()) && waitNetPart(fpp.address, usePin)) {
-                        if (!usePin) {
-                            pass = NetSeal.open(hub.ids.peerNet(id), fpp.method, fpp.ssid, fpp.sealKnown);
-                            if (pass == null) throw new IOException("need-pin");
+                    if (pass == null && (usePin ? np.sealPin.isEmpty() : np.sealKnown.isEmpty())) {
+                        WifiDirect.Peer w = waitNetPart(np.address, usePin);
+                        if (w != null) {
+                            np = w; // the list may have been refreshed meanwhile: use what arrived
+                            if (!usePin) {
+                                pass = NetSeal.open(hub.ids.peerNet(id), np.method, np.ssid, np.sealKnown);
+                                if (pass == null) throw new IOException("need-pin");
+                            }
                         }
                     }
-                    if (pass == null && usePin && !fpp.sealPin.isEmpty()) {
-                        pass = openWithPin(fpp.address, pin, id);
+                    if (pass == null && usePin && !np.sealPin.isEmpty()) {
+                        pass = openWithPin(np.address, pin, id);
                         if (pass == null) throw new IOException(cancelled ? "cancelled" : "wrong-code");
                     }
                     if (pass != null) {
                         route = "net";
                         List<String> addrs = new ArrayList<>();
-                        for (String a : fpp.addrs.split(",")) if (!a.trim().isEmpty()) addrs.add(a.trim());
-                        j = viaNetwork(fpp.method, fpp.ssid, pass, addrs, fpp.port, mode, secret, id);
+                        for (String a : np.addrs.split(",")) if (!a.trim().isEmpty()) addrs.add(a.trim());
+                        j = viaNetwork(np.method, np.ssid, pass, addrs, np.port, mode, secret, id);
                     } else {
                         // the other phone's network details didn't arrive (or it has an older Chibarti)
                         route = "invite";
                         hub.changed();
-                        j = viaInvitation(fpp, mode, secret, id);
+                        j = viaInvitation(np, mode, secret, id);
                     }
+                    port = np.port;
                 }
                 if (j == null) throw new IOException(cancelled ? "cancelled" : "unreachable");
-                finish(j.r, j.via, j.addr, j.via.equals("wifi") ? flp.port : fpp.port, j.net, mode);
+                finish(j.r, j.via, j.addr, j.via.equals("wifi") ? flp.port : port, j.net, mode);
             } catch (Handshake.AuthException e) {
                 fail(authCode(e.code, mode));
             } catch (Exception e) {
@@ -385,9 +392,10 @@ final class Joiner implements LanBeacon.Found {
 
     /**
      * The phone was picked before the network part of its announcement arrived: ask again and wait for it (up to
-     * 10 seconds) instead of falling back at once to Android's invitation. True when it arrived.
+     * 10 seconds) instead of falling back at once to Android's invitation. The phone as it is now when it arrived,
+     * otherwise null.
      */
-    private boolean waitNetPart(String address, boolean pin) throws InterruptedException {
+    private WifiDirect.Peer waitNetPart(String address, boolean pin) throws InterruptedException {
         Diag.log("join", "waiting for the network details of the other phone's announcement");
         setStep("network");
         c.p2p.refreshServices();
@@ -395,11 +403,11 @@ final class Joiner implements LanBeacon.Found {
         while (!cancelled && System.currentTimeMillis() < until) {
             WifiDirect.Peer p;
             synchronized (c.p2p.peers) { p = c.p2p.peers.get(address); }
-            if (p != null && !(pin ? p.sealPin : p.sealKnown).isEmpty()) { Diag.log("join", "the network details arrived"); return true; }
+            if (p != null && !(pin ? p.sealPin : p.sealKnown).isEmpty()) { Diag.log("join", "the network details arrived"); return p; }
             Thread.sleep(500);
         }
         Diag.log("join", "the network details didn't arrive in 10 s, trying Android's invitation");
-        return false;
+        return null;
     }
 
     /**

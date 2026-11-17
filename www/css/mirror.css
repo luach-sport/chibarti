@@ -35,8 +35,8 @@
 #watch-pill { position: fixed; z-index: 31; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 8px); display: flex; justify-content: center; padding: 0 16px; pointer-events: none; }
 body.no-tabs #watch-pill { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
 #watch-pill .wp-open { pointer-events: auto; display: flex; align-items: center; gap: 8px; max-width: 520px; width: 100%; min-height: 48px; border: 0; border-radius: 999px; padding: 6px 8px 6px 16px; background: var(--primary); color: #fff; font: inherit; font-size: 14px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.22); }
-#watch-pill .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; }
-#watch-pill .go { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,.2); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+#watch-pill .t { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.25; text-align: start; overflow-wrap: anywhere; }
+#watch-pill .go { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,.2); border-radius: 999px; padding: 6px 10px; white-space: nowrap; font-size: 13px; flex: none; }
 #watch-pill .live { width: 8px; height: 8px; border-radius: 4px; background: #FF5A5F; flex: none; }
 body.watching main#screen { padding-bottom: calc(var(--nav-h) + 100px + env(safe-area-inset-bottom, 0px)); }
 body.watching.no-tabs main#screen { padding-bottom: 80px; }
