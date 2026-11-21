@@ -1,0 +1,111 @@
+/* The door to the Android side (ChibartiPlugin.java). In a browser (the site's screenshots, the tests) a small
+   stand-in plays Android's part: CB.sim holds a pretend state and answers the same calls. */
+(function () {
+  'use strict';
+  const CB = window.CB;
+  const listeners = {};
+
+  CB.N = {
+    call: (method, args) => {
+      if (CB.isNative()) return CB.callRaw('Chibarti', method, args || {});
+      return Promise.resolve(CB.sim.call(method, args || {}));
+    },
+    on: (event, cb) => {
+      if (CB.isNative()) { CB.listen('Chibarti', event, cb); return; }
+      (listeners[event] = listeners[event] || []).push(cb);
+    }
+  };
+
+  // ---------- the browser stand-in ----------
+  const now = () => Date.now();
+  const base = () => ({
+    me: { id: '0123456789abcdef0123456789abcdef', name: 'Galaxy A54', custom: '' },
+    mode: 'idle',
+    host: { on: false, ready: false, method: 'd', error: '' },
+    join: { on: false, step: '', name: '', error: '' },
+    scan: { on: false, error: '', peers: [] },
+    requests: [], transfers: [], offers: [], devices: [],
+    mirror: { role: 'none', state: '', error: '' },
+    control: { role: 'none', error: '', addon: false, service: false, can: true, url: '' },
+    textCount: 0
+  });
+  const S = { snap: base(), texts: [], history: [], env: null, folder: '', saveMode: 'auto' };
+  const emit = (ev, data) => (listeners[ev] || []).forEach((cb) => { try { cb(data); } catch (e) { console.warn(e); } });
+  const changed = () => emit('state', CB.copy(S.snap));
+
+  const env = () => S.env || {
+    sdk: 33, release: '13', model: 'Browser', p2p: true, camera: true, audioCapture: true, wifiOn: true, locationOn: true, locationNeeded: false,
+    perms: { nearby: true, notifications: true, audio: false, camera: true }, batteryFree: false, folder: S.folder || '', folderName: S.folder ? 'Download/מהטלפון' : '', saveMode: S.saveMode || 'auto'
+  };
+
+  CB.sim = {
+    S,
+    set: (patch) => { Object.keys(patch).forEach((k) => { S.snap[k] = patch[k]; }); changed(); },
+    reset: () => { S.snap = base(); S.texts = []; S.history = []; S.folder = ''; S.saveMode = 'auto'; changed(); },
+    emit,
+    call: (m, a) => {
+      const s = S.snap;
+      switch (m) {
+        case 'state': return CB.copy(s);
+        case 'env': case 'requestPerms': return env();
+        case 'texts': return { items: S.texts.slice() };
+        case 'history': return { items: S.history.slice() };
+        case 'devices': return { items: s.devices };
+        case 'host':
+          if (s.mode !== 'connected') s.mode = 'hosting';
+          s.host = { on: true, ready: true, method: 'd', error: '', network: 'DIRECT-k7-Galaxy A54', pin: '482193', expiresAt: now() + 9.5 * 60e3,
+            pass: 'k7Rw2pQx', addresses: ['192.168.49.1', '192.168.1.23'], web: { http: 8080, https: 8443, fp: 'AC:3D:A3:5D:2A:1E:91:AD' },
+            qr: 'chibarti://join?v=1&i=0123456789abcdef0123456789abcdef&n=Galaxy%20A54&t=Qm9vbS1ib29tLWJvb20tIQ&m=d&s=DIRECT-k7-Galaxy&k=pass1234&a=192.168.49.1&p=47821&e=' + Math.round(now() / 1000 + 600) };
+          changed(); return {};
+        case 'stopHost': if (s.mode !== 'connected') s.mode = 'idle'; s.host = base().host; changed(); return {};
+        case 'setMain': (s.room || []).forEach((m) => { m.main = m.id === a.id; }); { const m = (s.room || []).filter((x) => x.id === a.id)[0]; if (m && s.link) { s.link.peerId = m.id; s.link.name = m.name; } } changed(); return {};
+        case 'removeMember': s.room = (s.room || []).filter((m) => m.id !== a.id); changed(); return {};
+        case 'scan': s.scan = { on: true, error: '', peers: [
+          { key: 'p:aa', id: 'b1', name: 'Redmi Note 9', via: 'wifi-direct', app: true, trusted: true },
+          { key: 'l:b2', id: 'b2', name: 'הטאבלט של אבא', via: 'wifi', app: true, trusted: false },
+          { key: 'p:cc', id: '', name: 'DIRECT-TV-Living', via: 'wifi-direct', app: false, trusted: false }] };
+          changed(); return {};
+        case 'stopScan': s.scan.on = false; changed(); return {};
+        case 'join': case 'connectPeer': s.mode = 'joining'; s.join = { on: true, step: 'network', name: 'Redmi Note 9', error: '' }; changed(); return { error: '' };
+        case 'cancelJoin': s.mode = 'idle'; s.join = base().join; changed(); return {};
+        case 'disconnect': S.snap = Object.assign(base(), { devices: s.devices }); changed(); return {};
+        case 'sendText': {
+          const msg = { id: CB.uid(), text: a.text, ts: now(), mine: true, peer: s.link ? s.link.name : '', reply: a.reply || null };
+          S.lastSent = a;
+          S.texts.push(msg); s.textCount = S.texts.length; emit('text', msg); changed(); return {};
+        }
+        case 'paste': return { text: 'https://example.com' };
+        case 'pickFiles': return { files: a.media
+          ? [1, 2, 3, 4, 5, 6].map((i) => ({ uri: 'sim://p' + i, name: 'IMG_20' + i + '.jpg', size: 2400000 + i * 300000, mime: i === 3 ? 'video/mp4' : 'image/jpeg' }))
+          : [{ uri: 'sim://d1', name: 'חוזה שכירות.pdf', size: 845000, mime: 'application/pdf' }, { uri: 'sim://d2', name: 'תמונות טיול.zip', size: 312000000, mime: 'application/zip' }] };
+        case 'thumb': return { data: '' };
+        case 'sendFiles': S.lastFiles = a; return { tids: [1] };
+        case 'pickFolder': S.folder = 'content://sim/tree/primary%3ADownload%2F' + encodeURIComponent('מהטלפון'); S.saveMode = 'folder'; return { uri: S.folder, name: 'Download/מהטלפון' };
+        case 'setFolder': S.folder = a.uri || ''; if (!S.folder) S.saveMode = 'auto'; return {};
+        case 'setSaveMode': S.saveMode = a.mode; return { mode: a.mode };
+        case 'openFolder': case 'openDownloads': return {};
+        case 'connectKnown': {
+          const d = s.devices.filter((x) => x.id === a.id)[0];
+          if (!d) return { error: 'unknown' };
+          s.join = { on: false, step: '', name: '', error: '', want: { id: d.id, name: d.name, until: now() + 120e3 } };
+          s.scan.on = true;
+          changed(); return { error: '' };
+        }
+        case 'cancelKnown': s.join = base().join; s.scan.on = false; changed(); return {};
+        case 'diag': return { device: 'Samsung SM-A546E · Android 13 (API 33)', text: S.diag != null ? S.diag : [
+          '11-12 21:58:02.114 host: start (Android 13, SM-A546E)',
+          '11-12 21:58:03.870 p2p: group ready: DIRECT-k7-Galaxy A54 (0 connected)',
+          '11-12 21:58:03.902 host: ready: Wi-Fi Direct DIRECT-k7-Galaxy A54, addresses [192.168.49.1, 192.168.1.23], port 47821',
+          '11-12 21:58:04.311 p2p: announcing (with network: true, 118 bytes)',
+          '11-12 21:58:04.420 p2p: announce identity ok',
+          '11-12 21:58:04.431 p2p: announce network ok',
+          '11-12 21:58:31.006 host: secure connection from 192.168.49.66 (code)',
+          '11-12 21:58:34.512 host: connected: Redmi Note 9 (wifi-direct)'].join('\n') };
+        case 'diagClear': S.diag = ''; return {};
+        case 'shareText': case 'controlAppInfo': return {};
+        case 'mirrorStart': return { ok: false };
+        default: return {};
+      }
+    }
+  };
+})();

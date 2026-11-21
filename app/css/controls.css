@@ -1,0 +1,48 @@
+/* Switches, segmented buttons, buttons, inputs, notices, progress */
+.switch { width: 52px; height: 32px; border-radius: 16px; border: 0; background: var(--track); position: relative; padding: 0; flex-shrink: 0; transition: background .15s; }
+.switch::after { content: ''; position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 13px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: right .15s; }
+[aria-checked="true"] > .switch { background: var(--primary); }
+[aria-checked="true"] > .switch::after { right: 23px; }
+.switch-hit { width: 56px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; padding: 0; flex: none; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--inset); }
+.seg button { min-height: 44px; border-radius: 11px; border: 0; background: transparent; color: var(--ink); font-size: 14px; font-weight: 400; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 6px; text-align: center; }
+.seg button[aria-pressed="true"] { background: var(--surface); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+
+.btn { min-height: 54px; border-radius: 16px; border: 0; background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 700; padding: 0 18px; width: 100%; }
+.btn:active { background: var(--primary-press); }
+.btn.secondary { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-strong); }
+.btn.secondary svg { color: var(--primary-text); }
+.btn.ghost { background: transparent; color: var(--primary-text); min-height: 48px; }
+.btn.danger { background: var(--red-soft); color: var(--red-text); }
+.btn.small { min-height: 44px; width: auto; font-size: 14px; border-radius: 12px; padding: 0 14px; }
+.btn[aria-disabled="true"] { opacity: .5; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row > .btn { flex: 1; }
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field > label, .field .label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.field .hint { font-size: 12px; color: var(--muted); }
+.field .hint.bad { color: var(--red-text); font-weight: 600; }
+.input { width: 100%; min-height: 52px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); padding: 10px 14px; font-size: 16px; color: var(--ink); }
+.input:focus { outline: none; border-color: var(--primary); }
+.input::placeholder { color: var(--muted); opacity: 1; }
+textarea.input { min-height: 104px; resize: vertical; line-height: 1.5; }
+select.input { appearance: none; -webkit-appearance: none; }
+.input-row { display: flex; gap: 8px; }
+.input-row .input { flex: 1; min-width: 0; }
+.input-row .btn { width: auto; flex: none; min-height: 52px; }
+.notice { display: flex; align-items: flex-start; gap: 10px; border-radius: 16px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+.notice .grow { flex: 1; min-width: 0; }
+.notice.accent { background: var(--primary-soft); color: var(--ink); }
+.notice.accent svg { color: var(--primary-text); }
+.notice.green { background: var(--green-soft); color: var(--ink); }
+.notice.green svg { color: var(--green-text); }
+.notice.gray { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+.notice .link { border: 0; background: none; color: var(--primary-text); font-weight: 700; padding: 0 4px; min-height: 32px; }
+.fine { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0; }
+.progress { height: 10px; border-radius: 6px; background: var(--inset); overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--primary); border-radius: 6px; transition: width .3s; }
+.btn.ghost.light { color: #E9E4FF; }
+.notice.warn { background: var(--amber-soft); color: var(--ink); }
+.notice.warn svg { color: var(--amber-text); }
+.notice b { font-weight: 700; }

@@ -1,0 +1,19 @@
+/* Old Android WebViews (before Chrome 84) ignore "gap" in flex boxes. index.html adds .nogap there, and these
+   margins give the same spacing, so the screens look right on old phones too. */
+.nogap main#screen > * + * { margin-top: 14px; }
+.nogap .row > * + *, .nogap .banner > * + *, .nogap .top > * + *, .nogap .bar-top > * + *, .nogap .btn > * + *,
+.nogap .chip > * + *, .nogap .xfer .head > * + *, .nogap .toggle-row > * + *, .nogap .check-row > * + *,
+.nogap .sel-bar > * + *, .nogap .link-card .step > * + *, .nogap .hchip > * + *, .nogap .hbtn > * + *,
+.nogap .live-card .top-line > * + *, .nogap .composer > * + *, .nogap .msg .info > * + *, .nogap .via-chip > * + *,
+.nogap .timer > * + *, .nogap .notice > * + *, .nogap .seg button > * + *, .nogap #tabs .inner > * + * { margin-right: 10px; }
+.nogap .sheet > * + *, .nogap .link-card > * + *, .nogap .mirror-card > * + *, .nogap .live-card > * + *, .nogap .xfer > * + *,
+.nogap .qr-stage > * + *, .nogap .field > * + *, .nogap .empty > * + *, .nogap .setup-hero > * + *, .nogap .req-head > * + *,
+.nogap .thread > * + *, .nogap .msg > * + *, .nogap .qa > * + *, .nogap .pickbtn > * + *, .nogap .row .grow > * + *,
+.nogap .xfer .head .grow > * + * { margin-top: 10px; }
+.nogap .chips > * { margin: 0 0 8px 8px; }
+.nogap .xfer .ctl > * + *, .nogap .file-row .acts > * + * { margin-right: 4px; }
+.nogap .dev-row .acts > * + * { margin-right: 4px; }
+.nogap .reply-bar > * + * { margin-right: 8px; }
+.nogap .guide > * + * { margin-top: 10px; } .nogap .guide .g > * + *, .nogap .guide .row-btns > * + * { margin-right: 10px; } .nogap .guide .body > * + * { margin-top: 6px; }
+.nogap .diag-acts > * + * { margin-right: 8px; margin-bottom: 8px; }
+.nogap .room-art > * + * { margin-right: 10px; }

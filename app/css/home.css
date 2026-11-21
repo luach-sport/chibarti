@@ -1,0 +1,62 @@
+/* Home: the connection card (two phones and what flows between them), quick actions, recent transfers */
+.link-card { position: relative; overflow: hidden; border-radius: 26px; padding: 18px 18px 16px; background: var(--hero); color: var(--hero-ink); min-height: 248px; display: flex; flex-direction: column; gap: 12px; }
+.link-card .duo { position: relative; height: 92px; margin: 0 -4px; }
+.link-card .duo svg { display: block; width: 100%; height: 100%; }
+.link-card .t { margin: 0; font-size: 21px; font-weight: 800; line-height: 1.25; }
+.link-card .s { margin: -6px 0 0; font-size: 14px; line-height: 1.5; color: var(--hero-muted); min-height: 21px; }
+.link-card .acts { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; margin-top: auto; }
+.link-card .acts.one { grid-template-columns: 1fr; }
+.link-card .hbtn { min-height: 52px; border-radius: 16px; border: 0; background: #FFFFFF; color: #06585B; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 10px; }
+.link-card .hbtn.ghost { background: rgba(255, 255, 255, 0.16); color: #FFFFFF; }
+.link-card .hbtn:active { transform: scale(.98); }
+.link-card .more { align-self: center; border: 0; background: none; color: var(--hero-muted); font-size: 13px; font-weight: 600; min-height: 36px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px; }
+.link-card .chips { gap: 6px; }
+.hchip { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.hchip .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.hchip .bars i { width: 3px; border-radius: 1px; background: rgba(255, 255, 255, 0.35); }
+.hchip .bars i.on { background: #FFFFFF; }
+.hchip .bars i:nth-child(1) { height: 5px; } .hchip .bars i:nth-child(2) { height: 8px; } .hchip .bars i:nth-child(3) { height: 12px; }
+.link-card .steps { display: grid; grid-gap: 8px; gap: 8px; }
+.link-card .step { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--hero-muted); }
+.link-card .step .dot { width: 22px; height: 22px; border-radius: 11px; border: 2px solid rgba(255, 255, 255, 0.35); flex: none; display: flex; align-items: center; justify-content: center; }
+.link-card .step.done { color: #FFFFFF; }
+.link-card .step.done .dot { background: #FFFFFF; border-color: #FFFFFF; color: #06585B; }
+.link-card .step.now { color: #FFFFFF; font-weight: 600; }
+.link-card .step.now .dot { border-color: #FFFFFF; border-top-color: transparent; animation: spin 0.9s linear infinite; }
+.link-card .err { background: rgba(0, 0, 0, 0.18); border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.5; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* the waves between the phones */
+.duo .wave { fill: none; stroke: var(--sun); stroke-width: 4; stroke-linecap: round; opacity: 0; animation: wave 2.2s ease-out infinite; transform-origin: 50% 50%; }
+.duo .wave.w2 { animation-delay: .35s; } .duo .wave.w3 { animation-delay: .7s; }
+@keyframes wave { 0% { opacity: 0; } 25% { opacity: 1; } 70% { opacity: .15; } 100% { opacity: 0; } }
+.duo .wire { stroke: rgba(255, 255, 255, 0.4); stroke-width: 3; stroke-dasharray: 2 8; stroke-linecap: round; }
+.duo.on .wire { stroke: var(--sun); stroke-dasharray: none; }
+.duo .flow { fill: var(--sun); }
+.duo.on .flow { animation: flow 1.6s linear infinite; }
+.duo.on .flow.f2 { animation-delay: .8s; }
+@keyframes flow { from { transform: translateX(0); } to { transform: translateX(var(--flow, -120px)); } }
+.duo .ph { fill: #FFFFFF; }
+.duo .scr { fill: #CDEDEC; }
+.duo .face { fill: #0A8F94; }
+.duo .lbl { fill: #FFFFFF; font: 600 11px Rubik, Arial, sans-serif; }
+
+/* quick actions */
+.quick { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; }
+.qa { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; min-height: 112px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-align: right; box-shadow: var(--shadow-card); }
+.qa .tile { background: var(--primary-soft); color: var(--primary-text); }
+.qa .t { font-size: 15px; font-weight: 700; }
+.qa .s { font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: -6px; }
+.qa:active { transform: scale(.985); }
+.qa.off { opacity: .62; }
+.qa .live { position: absolute; top: 14px; left: 14px; width: 10px; height: 10px; border-radius: 5px; background: #E5484D; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; transform: scale(.8); } }
+
+.link-card .hint { margin: 10px 0 0; font-size: 13px; color: #FFE7A8; }
+
+/* a room: dots for the devices, chips with their names (tap → the room page) */
+.room-art { display: flex; justify-content: center; align-items: center; gap: 10px; height: 64px; }
+.room-art .dot { width: 26px; height: 40px; border-radius: 7px; background: rgba(255, 255, 255, .85); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); }
+.room-art .dot.me { width: 30px; height: 48px; background: #FFFFFF; outline: 3px solid #FFD27A; outline-offset: 2px; }
+.room-chips { border: 0; background: none; padding: 0; width: 100%; justify-content: center; cursor: pointer; }
+.link-card .wait-more { display: flex; margin: 10px auto 0; }

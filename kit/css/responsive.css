@@ -1,0 +1,29 @@
+/* Tablet and phone widths: one column, screenshots under the text, wide lists become stacked. Shared by every Itzko site. */
+@media (max-width: 820px) {
+  .chapter { grid-template-columns: minmax(0, 1fr); }
+  .chapter .phones { order: 2; justify-content: center; }
+  .chapter .chapter-text { display: contents; }
+  .chapter .chapter-head { order: 0; }
+  .chapter .intro { order: 1; }
+  .chapter .keys, .chapter .sub, .chapter .after { order: 3; }
+  .phones.two { overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 4px 12px; margin-inline: -4px; justify-content: flex-start; }
+  .phones.two .phone { scroll-snap-align: center; width: 230px; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .hero-phone { width: 200px; }
+}
+@media (max-width: 640px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .hero-phone { display: none; }
+  .credit-band { grid-template-columns: minmax(0, 1fr); }
+  .share-band { grid-template-columns: minmax(0, 1fr); }
+  .share-band .share-wrap { justify-self: start; }
+}
+@media (max-width: 560px) {
+  .keys li { grid-template-columns: minmax(0, 1fr); }
+  .tabbar { gap: 2px; padding: 6px; }
+  .tabbar .ic { width: 42px; }
+  .tabbar a { font-size: 13px; padding: 8px 2px; }
+  .brand img { width: 60px; height: 60px; }
+  .offline-band { grid-template-columns: minmax(0, 1fr); }
+  .more-grid { grid-template-columns: minmax(0, 1fr); }
+}
