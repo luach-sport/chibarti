@@ -1,0 +1,149 @@
+/* Connecting: start (show the code), scan, nearby list, the 6-digit code, approve, cancel, disconnect, forget. */
+(function () {
+  'use strict';
+  const CB = window.CB;
+  const A = CB.A;
+  const ui = CB.ui;
+
+  A.host = async () => {
+    CB.haptic();
+    ui.hostFor = 'phone';
+    if (!(await CB.ensureNetwork('host'))) return;
+    await CB.N.call('host');
+    if (CB.screenName() !== 'host') CB.pushView({ name: 'host' });
+  };
+  A['host-retry'] = async () => { await CB.N.call('stopHost'); await CB.sleep(300); await CB.N.call('host'); };
+  A['show-host'] = () => CB.pushView({ name: ui.hostFor === 'pc' ? 'pc' : 'host' });
+  A['stop-host'] = async () => { await CB.N.call('stopHost'); if (CB.screenName() === 'host' || CB.screenName() === 'pc') CB.popView(); };
+
+  // A computer: the same offer as for a phone, with the steps for a browser
+  A.pc = async () => {
+    CB.haptic();
+    ui.hostFor = 'pc';
+    if (!(await CB.ensureNetwork('pc'))) return;
+    await CB.N.call('host');
+    if (CB.screenName() !== 'pc') { if (CB.screenName() === 'host') ui.stack.pop(); CB.pushView({ name: 'pc' }); }
+  };
+
+  // The program on a computer shows a QR code: scanning it here is the approval, and the program connects by itself
+  A['pc-scan'] = async () => {
+    CB.haptic();
+    if (!(await CB.ensureNetwork('pc'))) return;
+    CB.pushView({ name: 'scan', pc: true });
+  };
+  CB.claimPc = async (text) => {
+    const q = {};
+    String(text).replace(/^chibarti:\/\/pc\?/, '').split('&').forEach((kv) => { const i = kv.indexOf('='); if (i > 0) { try { q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* skip */ } } });
+    if (!/^[0-9a-f]{32}$/.test(q.k || '')) { CB.toast('הקוד הזה לא מתוכנת חיברתי'); return; }
+    ui.hostFor = 'pc';
+    if (CB.L().mode !== 'hosting') await CB.N.call('host');
+    await CB.N.call('claim', { token: q.k, name: q.n || '' });
+    ui.stack = [{ name: 'pc' }];
+    CB.render();
+    CB.toast('נסרק. ' + CB.pre('', q.n || 'המחשב') + ' יתחבר עכשיו לבד');
+  };
+
+  A.scan = async () => {
+    CB.haptic();
+    if (!(await CB.ensureNetwork('join'))) return;
+    CB.pushView({ name: 'scan' });
+  };
+
+  A.nearby = async () => {
+    if (!(await CB.ensureNetwork('scan'))) return;
+    await CB.N.call('scan');
+    if (CB.screenName() !== 'nearby') {
+      if (CB.screenName() === 'scan') ui.stack.pop();
+      CB.pushView({ name: 'nearby' });
+    } else CB.render(true);
+  };
+  A['scan-stop'] = () => CB.N.call('stopScan');
+
+  /** A QR code (camera or a chibarti:// link): start joining and show the progress on Home. */
+  CB.joinWith = async (text) => {
+    if (/^chibarti:\/\/pc\?/.test(String(text))) { CB.claimPc(text); return; }
+    // The small code of the computer's hotspot (in the Windows program) is for the phone's camera or Wi-Fi settings
+    if (/^WIFI:/i.test(String(text))) { CB.toast('זה קוד של Wi-Fi. סורקים אותו במצלמה של הטלפון או בהגדרות ה-Wi-Fi, ואחר כך כאן את הקוד הגדול שבתוכנה.', 5200); if (CB.screenName() === 'scan') { await CB.sleep(1800); if (CB.screenName() === 'scan') CB.render(); } return; }
+    const r = await CB.N.call('join', { qr: text }).catch(() => ({ error: 'unreachable' }));
+    if (r && r.error) {
+      const msg = CB.joinError(r.error);
+      if (msg) CB.toast(msg, 4200);
+      if (CB.screenName() === 'scan') { await CB.sleep(1800); if (CB.screenName() === 'scan') CB.render(); }
+      return;
+    }
+    ui.stack = [];
+    ui.tab = 'home';
+    CB.render();
+  };
+
+  A['peer-connect'] = (el) => {
+    if (el.dataset.trusted === '1') { connectPeer(el.dataset.key, '', el.dataset.name); return; }
+    CB.openSheet('pin', { key: el.dataset.key, name: el.dataset.name });
+  };
+
+  async function connectPeer(key, pin, name) {
+    const r = await CB.N.call('connectPeer', { key, pin }).catch(() => ({ error: 'unreachable' }));
+    if (r && r.error === 'need-pin') { CB.openSheet('pin', { key, name }); return; }
+    if (r && r.error) { CB.toast(CB.joinError(r.error), 4200); return; }
+    CB.closeSheet();
+    ui.stack = [];
+    ui.tab = 'home';
+    CB.render();
+  }
+
+  A['pin-key'] = (el) => {
+    const k = el.dataset.k, f = ui.form;
+    f.bad = false;
+    if (k === 'del') f.pin = f.pin.slice(0, -1);
+    else if (f.pin.length < 6) f.pin += k;
+    CB.haptic();
+    CB.renderSheet();
+    if (f.pin.length === 6) setTimeout(() => { if (CB.sheetIs('pin') && ui.form.pin.length === 6) A['pin-go'](); }, 180);
+  };
+  A['pin-go'] = () => {
+    const d = ui.sheet && ui.sheet.data;
+    if (!d || ui.form.pin.length !== 6) return;
+    connectPeer(d.key, ui.form.pin, d.name);
+  };
+
+  A['toggle-remember'] = () => { ui.form.remember = !ui.form.remember; CB.renderSheet(); };
+  A.approve = async (el) => {
+    const d = ui.sheet && ui.sheet.data;
+    if (!d) return;
+    CB.haptic(true);
+    await CB.N.call('approve', { rid: d.rid, allow: el.dataset.allow === '1', remember: !!ui.form.remember });
+    CB.closeSheet();
+  };
+
+  A['cancel-join'] = () => CB.N.call('cancelJoin');
+
+  // A remembered phone: look for it and connect without a code (on the other phone: "Start a connection").
+  A['known-connect'] = async (el) => {
+    if (CB.connected()) { CB.toast('כבר מחובר. קודם מנתקים'); return; }
+    const r = await CB.N.call('connectKnown', { id: el.dataset.id }).catch(() => ({ error: 'unreachable' }));
+    if (r && r.error) { CB.toast(CB.joinError(r.error), 4200); return; }
+    CB.haptic();
+    ui.stack = [];
+    ui.tab = 'home';
+    CB.render();
+  };
+  A['known-cancel'] = () => CB.N.call('cancelKnown');
+  A.disconnect = () => {
+    if (CB.inRoom()) {
+      if (CB.isRoomHost()) return CB.confirm('סגירת החדר', 'לנתק את כל ' + CB.roomOthers().length + ' המכשירים? העברות שעוד לא הסתיימו ייעצרו.', 'סגירה', () => CB.N.call('disconnect'), true);
+      return CB.confirm('יציאה מהחדר', 'לצאת מהחדר של ' + CB.peerName() + '? העברות שעוד לא הסתיימו ייעצרו.', 'יציאה', () => CB.N.call('disconnect'), true);
+    }
+    return CB.confirm('ניתוק', 'לנתק את החיבור עם ' + CB.peerName() + '? העברות שעוד לא הסתיימו ייעצרו.', 'ניתוק', () => CB.N.call('disconnect'), true);
+  };
+  A.forget = (el) => CB.confirm('שכחת המכשיר', 'לשכוח את ' + (el.dataset.name || 'המכשיר') + '? בפעם הבאה צריך קוד ואישור.', 'שכחה', () => CB.N.call('forget', { id: el.dataset.id }), true);
+
+  A['needs-check'] = async () => { await CB.loadEnv(); CB.renderSheet(); };
+  A['needs-go'] = () => {
+    const then = ui.sheet && ui.sheet.data && ui.sheet.data.then;
+    CB.closeSheet();
+    if (then === 'host') A.host();
+    else if (then === 'pc') A.pc();
+    else if (then === 'join') A.scan();
+    else if (then === 'scan') A.nearby();
+  };
+})();

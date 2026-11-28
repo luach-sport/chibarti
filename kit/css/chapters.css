@@ -1,0 +1,32 @@
+/* A chapter per screen: title and the list of its buttons, beside phone screenshots. */
+.chapter { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: start; scroll-margin-top: 16px; }
+.chapter-text { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.chapter-head { display: flex; align-items: center; gap: 14px; }
+.chapter-head .tile { width: 48px; height: 48px; border-radius: 15px; background: var(--primary-soft); color: var(--primary-text); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.chapter-head .tile.green { background: var(--green-soft); color: var(--green-text); }
+.chapter-head .tile.amber { background: var(--amber-soft); color: var(--amber-text); }
+.chapter-head h2 { font-size: clamp(26px, 4.2vw, 34px); font-weight: 800; letter-spacing: -0.3px; }
+.chapter-head .eyebrow { display: block; margin-bottom: 4px; }
+.intro { font-size: 18px; color: var(--muted); max-width: 54ch; }
+.sub { font-size: 18px; font-weight: 800; margin-top: 6px; }
+
+.keys { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+.keys li { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 6px 16px; padding: 14px 18px; align-items: baseline; }
+.keys li + li { border-top: 1px solid var(--line); }
+.key { justify-self: start; font-weight: 700; font-size: 15px; color: var(--primary-text); background: var(--primary-soft); border-radius: 10px; padding: 3px 10px; line-height: 1.5; }
+.key.solid { color: var(--on-primary); background: var(--primary); }
+.key.green { color: var(--green-text); background: var(--green-soft); }
+.what { color: var(--ink); font-size: 15.5px; min-width: 0; }
+.what small { color: var(--muted); font-size: 14px; }
+
+.phones { display: flex; gap: 16px; align-items: flex-start; }
+.phone { margin: 0; width: 260px; max-width: 100%; flex-shrink: 0; background: var(--frame); border-radius: 38px; padding: 8px; box-shadow: var(--shadow); }
+.phone img { display: block; width: 100%; height: auto; aspect-ratio: 720 / 1480; border-radius: 30px; background: var(--inset); }
+.phone figcaption { color: var(--frame-ink); font-size: 13px; text-align: center; padding: 8px 4px 4px; }
+.phones.two .phone { width: 220px; }
+
+.path { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 700; }
+.path .sep { color: var(--muted); font-weight: 400; }
+.callout { background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: clamp(20px, 4vw, 32px); }
+.ask { background: var(--primary-soft); border-radius: 28px; padding: clamp(20px, 4vw, 32px); }
+.ask .intro { color: var(--ink); }

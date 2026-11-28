@@ -1,0 +1,38 @@
+/* Text messages: bubbles and the typing bar above the tabs */
+.thread { display: flex; flex-direction: column; gap: 8px; overflow-x: hidden; padding-bottom: 2px; }
+.msg { max-width: 84%; display: flex; flex-direction: column; gap: 4px; position: relative; transition: transform .18s; }
+.msg.mine { align-self: flex-end; }
+.msg.theirs { align-self: flex-start; }
+.msg .bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; }
+.msg.mine .bubble { background: var(--primary); color: var(--on-primary); border-bottom-left-radius: 6px; }
+.msg.theirs .bubble { background: var(--surface); border: 1px solid var(--line); border-bottom-right-radius: 6px; }
+.msg .info { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); padding: 0 6px; }
+.msg.mine .info { justify-content: flex-end; }
+.msg .copy { border: 0; background: var(--primary-soft); color: var(--primary-text); font-size: 12px; font-weight: 700; border-radius: 99px; min-height: 30px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px; }
+.msg .bubble a { color: inherit; text-decoration: underline; }
+#composer-root { position: fixed; z-index: 31; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
+#composer-root:empty { display: none; }
+.composer { max-width: 600px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; }
+.composer textarea { flex: 1; min-width: 0; min-height: 46px; max-height: 120px; border-radius: 23px; border: 1.5px solid var(--line); background: var(--surface); padding: 11px 16px; font-size: 16px; line-height: 1.4; resize: none; color: var(--ink); }
+.composer textarea:focus { outline: none; border-color: var(--primary); }
+.composer .icon-btn { width: 46px; height: 46px; border-radius: 23px; }
+.composer .send { background: var(--primary); color: var(--on-primary); }
+.composer .paste { background: var(--inset); color: var(--ink-2); }
+
+/* answering a message: drag it to the left, or "תגובה" */
+.msg.swiping { transition: none; }
+.msg .swipe-hint { position: absolute; top: 50%; right: -40px; width: 30px; height: 30px; margin-top: -15px; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: var(--inset); color: var(--muted); opacity: 0; transform: scale(.6); transition: opacity .15s, transform .15s; pointer-events: none; }
+.msg.swiping .swipe-hint { opacity: .8; }
+.msg.armed .swipe-hint { opacity: 1; transform: scale(1); background: var(--primary-soft); color: var(--primary-text); }
+.msg.flash .bubble { animation: msgflash 1.4s ease-out; }
+@keyframes msgflash { 0%, 55% { filter: brightness(.82); } 100% { filter: none; } }
+.quote { display: block; width: 100%; text-align: right; border: 0; border-right: 3px solid currentColor; background: rgba(0, 0, 0, .07); border-radius: 8px; padding: 4px 9px; margin: 0 0 6px; color: inherit; font: inherit; font-size: 12.5px; line-height: 1.45; white-space: normal; }
+.msg.mine .quote { background: rgba(255, 255, 255, .18); }
+.quote b { display: block; font-size: 12px; }
+.quote span { display: block; opacity: .88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-bar { max-width: 600px; margin: 0 auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px 0; }
+.reply-bar .ic { color: var(--primary-text); flex: none; display: inline-flex; }
+.reply-bar .grow { flex: 1; min-width: 0; border-right: 3px solid var(--primary); padding: 2px 9px; font-size: 13px; }
+.reply-bar .grow b { display: block; font-size: 12.5px; color: var(--primary-text); }
+.reply-bar .grow span { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-bar .icon-btn { width: 36px; height: 36px; flex: none; }

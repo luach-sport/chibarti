@@ -1,0 +1,34 @@
+/* Bottom sheets (dialogs) */
+.sheet-wrap { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-backdrop { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: var(--backdrop); animation: fade .18s ease-out; }
+.sheet { position: relative; width: 100%; max-width: 600px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; background: var(--bg); border-radius: 26px 26px 0 0; padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; animation: up .22s cubic-bezier(.2, .8, .2, 1); }
+.sheet { scroll-padding-bottom: 110px; }
+.sheet > * { flex-shrink: 0; }
+.sheet.full { height: 94vh; height: 94dvh; max-height: 94dvh; }
+.sheet .grabber { width: 40px; height: 5px; border-radius: 3px; background: var(--line-strong); align-self: center; margin-bottom: -4px; flex-shrink: 0; }
+.sheet .sheet-head { display: flex; align-items: center; gap: 8px; margin: 0 -8px 0 -8px; }
+.sheet .sheet-head h2 { flex: 1; margin: 0; font-size: 20px; font-weight: 700; }
+@keyframes up { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.pick-list { display: flex; flex-direction: column; }
+.pick-list .row[aria-pressed="true"] .t { color: var(--primary-text); font-weight: 700; }
+.pick-list .row .check { color: var(--primary); }
+
+@media (min-width: 640px) {
+  .sheet { border-radius: 26px; margin-bottom: 24px; }
+  .sheet-foot { margin-bottom: -22px; }
+}
+
+/* a step-by-step guide inside a sheet (remote-control add-on) */
+.guide { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 14px; }
+.guide .g { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 16px; background: var(--surface); border: 1.5px solid var(--line); }
+.guide .g.now { border-color: var(--primary); }
+.guide .g.done { opacity: .62; }
+.guide .n { width: 26px; height: 26px; border-radius: 13px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--primary-soft); color: var(--primary-text); font-weight: 700; font-size: 13px; }
+.guide .g.done .n { background: var(--green-soft); color: var(--green-text); }
+.guide .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide .t { font-weight: 700; font-size: 14.5px; }
+.guide .s { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.guide .btn.small { align-self: flex-start; min-height: 40px; }
+.guide .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-row.one { grid-template-columns: 1fr; }

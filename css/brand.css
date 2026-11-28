@@ -1,0 +1,49 @@
+/* חיברתי's colours and font on top of the shared Itzko kit (the same as the app, www/css/base.css). */
+@font-face {
+  font-family: 'Rubik';
+  src: url('../fonts/Rubik-var.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --primary: #0A8F94;
+  --primary-text: #066B6F;
+  --primary-soft: #DAF2F1;
+  --on-primary: #FFFFFF;
+  --hero: #07777B;
+  --hero-ink: #FFFFFF;
+  --hero-muted: #CDEDEC;
+  --hero-btn-ink: #07777B;
+  --maker-accent: #066B6F;
+  --credit-accent: #FFD27A;
+  --credit-mono: #0A8F94;
+  --credit-mono-ink: #FFFFFF;
+  --credit-glow: rgba(10, 143, 148, 0.22);
+  --shadow: 0 18px 40px -18px rgba(10, 143, 148, 0.4);
+  --font: 'Rubik', 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --primary: #2BC3C5; --primary-text: #6FDCDD; --primary-soft: #113436; --on-primary: #04201F; --hero: #0B5F62; --hero-muted: #BFE6E5; --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7); }
+}
+:root[data-theme="dark"] { --primary: #2BC3C5; --primary-text: #6FDCDD; --primary-soft: #113436; --on-primary: #04201F; --hero: #0B5F62; --hero-muted: #BFE6E5; --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7); }
+
+
+/* The computer page, at computer size, under the "חיבור למחשב" chapter */
+.desk-shot { grid-column: 1 / -1; margin: 8px 0 0; }
+.desk-shot img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid rgba(15, 26, 27, .08); box-shadow: var(--shadow); }
+.desk-shot figcaption { text-align: center; font-size: 13px; color: var(--muted, #536869); margin-top: 10px; }
+@media (max-width: 860px) { .desk-shot { order: 4; } }
+.pc-dl { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 14px; }
+.pc-dl span { font-size: 13px; color: var(--muted, #536869); }
+.pc-dl-btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 14px; background: #0A8F94; color: #fff !important; font-weight: 700; text-decoration: none; }
+.pc-dl-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pc-dl-btn:hover { background: #087A7E; }
+
+/* three screenshots side by side (connecting, received files, settings) */
+.phones.three .phone { width: 180px; border-radius: 30px; padding: 6px; }
+.phones.three .phone img { border-radius: 24px; }
+@media (max-width: 820px) {
+  .phones.three { overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 4px 12px; margin-inline: -4px; justify-content: flex-start; }
+  .phones.three .phone { scroll-snap-align: center; width: 230px; }
+}

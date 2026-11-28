@@ -1,0 +1,45 @@
+/* The top of each site: name, what it does, the buttons, the credit, and a phone with the real app. */
+.hero {
+  background: var(--hero);
+  color: var(--hero-ink);
+  border-radius: 32px;
+  padding: clamp(22px, 5vw, 44px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px 40px;
+  align-items: center;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.hero::after { content: ""; position: absolute; inset: auto auto -140px -90px; width: 360px; height: 360px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); pointer-events: none; }
+.hero-copy { display: flex; flex-direction: column; gap: 18px; min-width: 0; position: relative; z-index: 1; }
+.brand { display: flex; align-items: center; gap: 16px; }
+.brand img { width: 72px; height: 72px; border-radius: 20px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22); }
+.brand h1 { font-size: clamp(42px, 8vw, 64px); font-weight: 900; letter-spacing: -1px; }
+.slogan { display: block; margin-top: 2px; color: var(--hero-muted); font-weight: 600; font-size: 18px; }
+.lead { font-size: clamp(17px, 2.4vw, 20px); color: var(--hero-muted); max-width: 36ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.fact { background: var(--hero-chip); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 500; }
+.fact.offline { background: #FFFFFF; color: #16181D; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.fact.offline svg { width: 16px; height: 16px; color: #1D7A45; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 22px; border-radius: 18px; font: inherit; font-weight: 700; font-size: 17px; text-decoration: none; cursor: pointer; border: 0; }
+.btn.light { background: #FFFFFF; color: var(--hero-btn-ink, var(--hero)); box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.35); }
+.btn.ghost { background: var(--hero-chip); color: var(--hero-ink); font-size: 15px; min-height: 44px; padding: 0 16px; }
+.btn:active { transform: translateY(1px); }
+#apk-url { width: 100%; box-sizing: border-box; border: 0; border-radius: 12px; padding: 10px 12px; font: inherit; }
+
+/* The credit, big and clear, right under the name. */
+.maker { align-self: flex-start; display: inline-flex; align-items: center; gap: 14px; background: #FFFFFF; color: #16181D; text-decoration: none; border-radius: 22px; padding: 10px 22px 10px 12px; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.22), 0 12px 28px -12px rgba(0, 0, 0, 0.5); }
+.maker .mono { width: 50px; height: 50px; border-radius: 16px; background: #16181D; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 26px; font-family: 'Rubik', var(--font); direction: ltr; }
+.maker .by { display: flex; flex-direction: column; line-height: 1.1; }
+.maker small { font-size: 14px; font-weight: 700; color: #596070; }
+.maker b { font-size: clamp(26px, 4vw, 30px); font-weight: 900; letter-spacing: 0.3px; direction: ltr; unicode-bidi: isolate; color: var(--maker-accent); font-family: 'Rubik', var(--font); }
+
+.hero-phone { position: relative; z-index: 1; margin: 0; width: 230px; background: #16181D; border-radius: 36px; padding: 7px; box-shadow: 0 24px 48px -18px rgba(0, 0, 0, 0.55); transform: rotate(-3deg); }
+.hero-phone img { display: block; width: 100%; height: auto; aspect-ratio: 720 / 1480; border-radius: 30px; background: #E9EBEF; }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-phone { animation: rise 0.9s cubic-bezier(.2, .8, .2, 1) 0.15s both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(24px) rotate(-3deg); } to { opacity: 1; transform: translateY(0) rotate(-3deg); } }
+}

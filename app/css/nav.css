@@ -1,0 +1,11 @@
+/* Bottom tabs */
+#tabs { position: fixed; z-index: 30; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+#tabs .inner { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-around; align-items: center; height: var(--nav-h); padding: 0 4px; }
+#tabs button { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 64px; min-height: 56px; justify-content: center; border: 0; background: none; color: var(--muted); font-size: 11px; font-weight: 500; padding: 4px 0; }
+#tabs button .ic { display: flex; align-items: center; justify-content: center; width: 56px; height: 30px; border-radius: 999px; }
+#tabs button[aria-current="page"] { color: var(--primary-text); font-weight: 600; }
+#tabs button[aria-current="page"] .ic { background: var(--primary-soft); }
+#tabs button .ic { position: relative; }
+#tabs .dot { position: absolute; top: 3px; left: 14px; width: 9px; height: 9px; border-radius: 5px; background: #E5484D; border: 2px solid var(--surface); display: none; }
+#tabs .dot.on { display: block; }
+#tabs button { min-width: 58px; }
